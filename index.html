@@ -184,7 +184,7 @@ backdrop-filter: blur(20px);
 </div>
 </div>
 
-<!-- Navbar (Without Kiosk View Button) -->
+<!-- Navbar -->
 <nav class="navbar navbar-dark my-3">
 <div class="container glass-card py-2 px-4 flex-wrap gap-2">
 <a class="navbar-brand d-flex align-items-center gap-2" href="index.html">
@@ -395,8 +395,9 @@ google.charts.setOnLoadCallback(initDashboard);
 
 let tiltGauge, moistureGauge, gaugeData, telemetryChart;
 let activeChannelId = '3474434';
+let READ_API_KEY = 'HGQU6VE5X73Q0K8N'; // Your Read API Key for private channel fetching
 let resultsCount = 15;
-let READ_API_URL = `https://api.thingspeak.com/channels/${activeChannelId}/feeds.json?results=${resultsCount}`;
+let READ_API_URL = `https://api.thingspeak.com/channels/${activeChannelId}/feeds.json?api_key=${READ_API_KEY}&results=${resultsCount}`;
 let previousMoisture = null;
 
 function logEvent(msg) {
@@ -431,7 +432,7 @@ nodeBadge.innerText = 'ESP32 Node: Gamma-3';
 updateDashboardWithValues(38.2, 78.5);
 } else {
 nodeBadge.innerText = 'ESP32 Node: Alpha-1';
-READ_API_URL = `https://api.thingspeak.com/channels/${activeChannelId}/feeds.json?results=${resultsCount}`;
+READ_API_URL = `https://api.thingspeak.com/channels/${activeChannelId}/feeds.json?api_key=${READ_API_KEY}&results=${resultsCount}`;
 fetchTelemetryData();
 }
 }
@@ -453,7 +454,7 @@ moistureGauge = new google.visualization.Gauge(moistureElem);
 initChart();
 drawSlopeVisualizer(0);
 fetchTelemetryData();
-setInterval(fetchTelemetryData, 3000); // Updated to 3s for fast sync
+setInterval(fetchTelemetryData, 3000); // 3s fast refresh
 }
 
 function calculateLRI(tilt, moisture) {
@@ -632,13 +633,13 @@ bootstrap.Modal.getInstance(modalEl).hide();
 
 function updateChartRange(points) {
 resultsCount = points;
-READ_API_URL = `https://api.thingspeak.com/channels/${activeChannelId}/feeds.json?results=${resultsCount}`;
+READ_API_URL = `https://api.thingspeak.com/channels/${activeChannelId}/feeds.json?api_key=${READ_API_KEY}&results=${resultsCount}`;
 fetchTelemetryData();
 }
 
 async function downloadCSV() {
 try {
-const response = await fetch(`https://api.thingspeak.com/channels/${activeChannelId}/feeds.json?days=7`);
+const response = await fetch(`https://api.thingspeak.com/channels/${activeChannelId}/feeds.json?api_key=${READ_API_KEY}&days=7`);
 const data = await response.json();
 const feeds = data.feeds;
 
