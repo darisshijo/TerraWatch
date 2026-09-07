@@ -3,712 +3,121 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TerraWatch Pro - Landslide Early Warning System</title>
-
-  <!-- PWA Manifest Link -->
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#38bdf8">
-  
-  <!-- Fonts & Icons -->
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-
-  <!-- Libraries (Explicitly Ordered) -->
+  <title>TerraWatch Pro - Early Warning System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://www.gstatic.com/charts/loader.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
   <style>
-    :root {
-      --card-bg: rgba(15, 23, 42, 0.85);
-      --card-border: rgba(255, 255, 255, 0.12);
-      --text-main: #f8fafc;
-      --accent-cyan: #38bdf8;
-      --accent-green: #10b981;
-      --accent-yellow: #f59e0b;
-      --accent-red: #ef4444;
-      --neo-shadow-dark: rgba(0, 0, 0, 0.6);
-      --neo-shadow-light: rgba(255, 255, 255, 0.05);
-    }
-
-    body {
-      background: linear-gradient(-45deg, #090d16, #0f172a, #1e1b4b, #0f172a);
-      background-size: 400% 400%;
-      animation: gradientBG 15s ease infinite;
-      color: var(--text-main);
-      font-family: 'Poppins', sans-serif;
-      min-height: 100vh;
-      margin: 0;
-      padding-bottom: 40px;
-      overflow-x: hidden;
-    }
-
-    @keyframes gradientBG {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-
-    #home-screen {
-      position: fixed;
-      top: 0; left: 0; width: 100vw; height: 100vh;
-      z-index: 9999;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      background: linear-gradient(135deg, rgba(9, 13, 22, 0.96), rgba(15, 23, 42, 0.96));
-      backdrop-filter: blur(12px);
-      transition: opacity 0.8s ease, visibility 0.8s ease;
-    }
-
-    #home-screen.hidden {
-      opacity: 0;
-      visibility: hidden;
-      pointer-events: none;
-    }
-
-    .pulse-text {
-      animation: blink 2s infinite;
-      color: var(--accent-cyan);
-    }
-
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
-    }
-
-    .glass-card {
-      position: relative;
-      z-index: 1;
-      background: var(--card-bg);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid var(--card-border);
-      border-radius: 20px;
-      box-shadow: 8px 8px 20px var(--neo-shadow-dark), -4px -4px 15px var(--neo-shadow-light);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .status-pulse {
-      width: 10px;
-      height: 10px;
-      background-color: var(--accent-green);
-      border-radius: 50%;
-      display: inline-block;
-      box-shadow: 0 0 0 rgba(16, 185, 129, 0.7);
-      animation: pulse 1.6s infinite;
-    }
-
-    @keyframes pulse {
-      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
-      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-    }
-
-    .brand-title {
-      font-family: 'Orbitron', sans-serif;
-      font-weight: 900;
-      letter-spacing: 2px;
-      background: linear-gradient(45deg, #38bdf8, #818cf8, #c084fc);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .metric-value {
-      font-family: 'Orbitron', sans-serif;
-      font-size: 2.5rem;
-      font-weight: 700;
-    }
-
-    .glow-cyan { text-shadow: 0 0 15px rgba(56, 189, 248, 0.6); }
-    .glow-green { text-shadow: 0 0 15px rgba(16, 185, 129, 0.6); }
-
-    .alert-banner {
-      border-radius: 16px;
-      padding: 18px 24px;
-      font-weight: 600;
-    }
-
-    .gauge-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 180px;
-    }
-
-    .btn-glass-info {
-      background: rgba(56, 189, 248, 0.15);
-      border: 1px solid rgba(56, 189, 248, 0.4);
-      color: #38bdf8;
-    }
-
-    .btn-glass-info:hover {
-      background: rgba(56, 189, 248, 0.3);
-      color: #fff;
-    }
-
-    .log-console {
-      font-family: monospace;
-      font-size: 0.8rem;
-      background: rgba(0, 0, 0, 0.6);
-      border-radius: 10px;
-      max-height: 120px;
-      overflow-y: auto;
-      padding: 10px;
-      color: #38bdf8;
-    }
-
-    .modal-content {
-      background: #0f172a;
-      border: 1px solid rgba(56, 189, 248, 0.3);
-      border-radius: 20px;
-      color: #f8fafc;
-      backdrop-filter: blur(20px);
-    }
-
-    body.kiosk-mode nav, body.kiosk-mode #telemetry-section {
-      display: none !important;
-    }
-
-    #kiosk-exit-btn {
-      position: fixed;
-      top: 15px;
-      right: 15px;
-      z-index: 10000;
-      display: none;
-    }
-
-    body.kiosk-mode #kiosk-exit-btn {
-      display: block;
-    }
+    body { background-color: #0f172a; color: #f8fafc; font-family: sans-serif; }
+    .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
   </style>
 </head>
-<body>
-
-  <!-- Fullscreen Landing Overlay -->
-  <div id="home-screen" onclick="enterDashboard()">
-    <div class="text-center p-4">
-      <i class="bi bi-shield-exclamation text-info display-1 mb-3"></i>
-      <h1 class="brand-title display-3 fw-bold mb-2">TERRAWATCH PRO</h1>
-      <p class="lead text-light mb-4">Landslide Early Warning & Micro-Telemetry Monitoring System</p>
-      <div class="mt-5">
-        <span class="fs-5 pulse-text fw-semibold"><i class="bi bi-hand-index-thumb me-2"></i>CLICK ANYWHERE TO ENTER SYSTEM</span>
-      </div>
-    </div>
-  </div>
-
-  <button id="kiosk-exit-btn" onclick="toggleKioskMode()" class="btn btn-danger btn-sm rounded-pill shadow">
-    <i class="bi bi-x-circle me-1"></i> Exit Kiosk View
-  </button>
-
-  <!-- Navbar -->
-  <nav class="navbar navbar-dark my-3">
-    <div class="container glass-card py-2 px-4 flex-wrap gap-2">
-      <a class="navbar-brand d-flex align-items-center gap-2" href="index.html">
-        <i class="bi bi-shield-exclamation text-info fs-3"></i>
-        <span class="brand-title fs-3">TERRAWATCH PRO</span>
-      </a>
-
-      <div class="ms-md-3">
-        <select id="node-selector" class="form-select bg-dark text-info border-info form-select-sm rounded-pill px-3" onchange="switchNode(this.value)">
-          <option value="3474434" selected>Node Alpha-1 (North Slope)</option>
-          <option value="DEMO_BETA">Node Beta-2 (East Cut Road)</option>
-          <option value="DEMO_GAMMA">Node Gamma-3 (Valley Ridge)</option>
-        </select>
-      </div>
-
-      <div class="d-flex align-items-center gap-2 ms-auto flex-wrap">
-        <button onclick="toggleKioskMode()" class="btn btn-outline-warning btn-sm rounded-pill px-3">
-          <i class="bi bi-display me-1"></i> Kiosk View
-        </button>
-        <button class="btn btn-outline-info btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#installationModal">
-          <i class="bi bi-plus-circle me-1"></i> Request Node
-        </button>
-        <a href="admin.html" class="btn btn-outline-light btn-sm rounded-pill px-3">
-          <i class="bi bi-shield-lock me-1"></i> Admin Portal
-        </a>
-        <button onclick="downloadCSV()" class="btn btn-glass-info btn-sm rounded-pill px-3 d-flex align-items-center gap-1">
-          <i class="bi bi-download"></i> CSV
-        </button>
-        <button onclick="exportPDF()" class="btn btn-outline-light btn-sm rounded-pill px-3 d-flex align-items-center gap-1">
-          <i class="bi bi-file-earmark-pdf"></i> PDF
-        </button>
-      </div>
-    </div>
-  </nav>
-
-  <div class="container" id="report-content">
+<body class="p-6">
+  <div class="max-w-6xl mx-auto space-y-6">
     
-    <!-- System Status Banner -->
-    <div class="row mb-4">
-      <div class="col-12">
-        <div id="alert-banner" class="alert-banner bg-success text-white glass-card d-flex align-items-center justify-content-between">
-          <div class="d-flex align-items-center gap-3">
-            <i id="alert-icon" class="bi bi-check-circle-fill fs-2"></i>
-            <div>
-              <div class="text-uppercase small opacity-75 fw-bold d-flex align-items-center gap-2">
-                System Status <span class="status-pulse" id="sensor-pulse"></span>
-              </div>
-              <div id="alert-text" class="fs-5">✅ SYSTEM NORMAL: PARAMETERS STABLE</div>
-            </div>
-          </div>
-          <span class="badge bg-dark border border-secondary opacity-75 fs-6 rounded-pill d-none d-sm-block" id="active-node-badge">ESP32 Node: Alpha-1</span>
-        </div>
+    <!-- Header Navigation -->
+    <div class="flex justify-between items-center glass p-4 rounded-xl">
+      <div>
+        <h1 class="text-2xl font-bold text-sky-400">TerraWatch Pro</h1>
+        <p class="text-xs text-slate-400">Landslide Early Warning & Telemetry System</p>
+      </div>
+      <a href="admin.html" class="bg-sky-600 hover:bg-sky-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Admin Portal</a>
+    </div>
+
+    <!-- Alert Notification Banner -->
+    <div id="alertBanner" class="hidden glass border-l-4 border-red-500 p-4 rounded-xl text-red-400 font-semibold flex justify-between items-center">
+      <span id="alertMessage">⚠️ LANDSLIDE RISK DETECTED!</span>
+      <span class="text-xs text-slate-400">Telegram Notification Triggered</span>
+    </div>
+
+    <!-- Live Gauges Section -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="glass p-6 rounded-xl flex flex-col items-center">
+        <h3 class="text-lg font-medium text-slate-300 mb-4">Soil Moisture Saturation (%)</h3>
+        <div id="gauge_moisture"></div>
+        <p id="moistureValue" class="text-3xl font-bold text-sky-400 mt-2">-- %</p>
+      </div>
+
+      <div class="glass p-6 rounded-xl flex flex-col items-center">
+        <h3 class="text-lg font-medium text-slate-300 mb-4">Ground Tilt Angle (°)</h3>
+        <div id="gauge_tilt"></div>
+        <p id="tiltValue" class="text-3xl font-bold text-emerald-400 mt-2">-- °</p>
       </div>
     </div>
 
-    <!-- Landslide Risk Index (LRI) Banner Bar -->
-    <div class="row mb-4">
-      <div class="col-12">
-        <div class="glass-card p-4">
-          <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-            <div>
-              <h5 class="text-info m-0"><i class="bi bi-speedometer2 me-2"></i>Composite Landslide Risk Index (LRI)</h5>
-              <p class="small text-secondary m-0 mt-1">Real-time risk weighting combining ground inclination angle and soil moisture saturation.</p>
-            </div>
-            <div class="text-end">
-              <span id="lri-value" class="fs-2 fw-bold text-info glow-cyan">12%</span>
-              <span id="lri-status" class="badge bg-dark border border-info text-info rounded-pill ms-2">Low Risk Level</span>
-            </div>
-          </div>
-          <div class="progress bg-dark border border-secondary mt-2" style="height: 12px; border-radius: 6px;">
-            <div id="lri-progress" class="progress-bar bg-info" role="progressbar" style="width: 12%;"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Slope Simulation Canvas -->
-    <div class="row mb-4">
-      <div class="col-12">
-        <div class="glass-card px-4 py-3 text-center" id="slope-card">
-          <div class="d-flex justify-content-between align-items-center mb-1">
-            <h6 class="text-info m-0"><i class="bi bi-box-seam me-2"></i>Dynamic Slope Angle Model</h6>
-            <span class="badge bg-dark border border-info text-info rounded-pill" style="font-size: 0.7rem;">Real-time Simulation</span>
-          </div>
-          <canvas id="slopeCanvas" width="800" height="90" class="w-100"></canvas>
-        </div>
-      </div>
-    </div>
-
-    <!-- Gauge Cards -->
-    <div class="row g-4 mb-4">
-      <div class="col-md-6">
-        <div class="glass-card p-4 h-100 text-center" id="tilt-card">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="text-info m-0"><i class="bi bi-compass me-2"></i>Ground Tilt Angle</h5>
-            <span class="badge bg-dark border border-info text-info rounded-pill">Threshold: 35°</span>
-          </div>
-          <div class="gauge-container"><div id="tilt_gauge"></div></div>
-          <div class="mt-3">
-            <span class="text-secondary">Current Angle:</span>
-            <span id="tilt-val" class="metric-value text-white glow-cyan ms-2">0.0°</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-md-6">
-        <div class="glass-card p-4 h-100 text-center" id="moisture-card">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="text-info m-0"><i class="bi bi-droplet-half me-2"></i>Soil Moisture Saturation</h5>
-            <span class="badge bg-dark border border-info text-info rounded-pill">Threshold: 70%</span>
-          </div>
-          <div class="gauge-container"><div id="moisture_gauge"></div></div>
-          <div class="mt-3">
-            <span class="text-secondary">Current Saturation:</span>
-            <span id="moisture-val" class="metric-value text-white glow-green ms-2">0.0%</span>
-          </div>
-          <div class="mt-2">
-            <small class="text-secondary">Saturation Trend: </small>
-            <span id="moisture-trend" class="badge bg-dark border border-secondary text-secondary">Stable (0.0%/sync)</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Telemetry Graph & Console -->
-    <div class="row g-4 mb-4" id="telemetry-section">
-      <div class="col-lg-8">
-        <div class="glass-card p-4 h-100">
-          <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-            <h5 class="text-info m-0"><i class="bi bi-graph-up-arrow me-2"></i>Telemetry Analytics</h5>
-            <div class="btn-group btn-group-sm">
-              <button type="button" class="btn btn-outline-info active" onclick="updateChartRange(15)">Live (15 Pts)</button>
-              <button type="button" class="btn btn-outline-info" onclick="updateChartRange(50)">50 Pts</button>
-              <button type="button" class="btn btn-outline-info" onclick="updateChartRange(100)">100 Pts</button>
-            </div>
-          </div>
-          <div style="position: relative; height: 260px; width: 100%;">
-            <canvas id="telemetryChart"></canvas>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-lg-4">
-        <div class="glass-card p-4 h-100 d-flex flex-column justify-content-between">
-          <h5 class="text-info mb-3"><i class="bi bi-terminal me-2"></i>Incident Log Console</h5>
-          <div class="log-console mb-3" id="log-console">
-            <div>[INIT] System initialized successfully.</div>
-          </div>
-          <button class="btn btn-outline-secondary btn-sm w-100 rounded-pill" onclick="clearConsole()">Clear Console</button>
-        </div>
-      </div>
+    <!-- ThingSpeak Dynamic Chart -->
+    <div class="glass p-6 rounded-xl">
+      <h3 class="text-lg font-medium text-slate-300 mb-4">Live Channel Telemetry Feed</h3>
+      <iframe class="w-full h-80 rounded-lg border border-slate-700" src="https://thingspeak.com/channels/3474434/charts/1?bgcolor=%231e293b&color=%2338bdf8&dynamic=true&type=line"></iframe>
     </div>
 
   </div>
-
-  <!-- Modal Form -->
-  <div class="modal fade" id="installationModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content">
-        <div class="modal-header border-secondary">
-          <h5 class="modal-title text-info"><i class="bi bi-geo-alt-fill me-2"></i>Request Node Installation</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body p-4">
-          <form id="installationForm" onsubmit="handleInstallationSubmit(event)">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label small text-secondary">Locality / Zone Name</label>
-                <input type="text" class="form-control bg-dark text-light border-secondary" placeholder="e.g., Sector 4 Hillside" required>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label small text-secondary">Contact Person / Officer</label>
-                <input type="text" class="form-control bg-dark text-light border-secondary" placeholder="Full Name" required>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label small text-secondary">Emergency Phone Number</label>
-                <input type="tel" class="form-control bg-dark text-light border-secondary" placeholder="+91 XXXXX XXXXX" required>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label small text-secondary">Terrain Risk Profile</label>
-                <select class="form-select bg-dark text-light border-secondary" required>
-                  <option value="" selected disabled>Select slope profile...</option>
-                  <option value="Steep Slope (>35°)">Steep Slope (>35°)</option>
-                  <option value="Moderate Slope (15°-35°)">Moderate Slope (15°-35°)</option>
-                  <option value="High Rainfall Zone">High Rainfall / Flood Zone</option>
-                </select>
-              </div>
-              <div class="col-12">
-                <label class="form-label small text-secondary">GPS Coordinates or Site Address</label>
-                <textarea class="form-control bg-dark text-light border-secondary" rows="2" placeholder="Latitude, Longitude or detailed locality landmarks..." required></textarea>
-              </div>
-              <div class="col-12 text-end mt-4">
-                <button type="button" class="btn btn-outline-secondary rounded-pill me-2" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-glass-info rounded-pill px-4">Submit Request</button>
-              </div>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
-    // Explicitly load Google Gauge Package
-    if (typeof google !== 'undefined') {
-      google.charts.load('current', {'packages':['gauge']});
-      google.charts.setOnLoadCallback(initDashboard);
+    const CHANNEL_ID = '3474434';
+    const READ_API_KEY = 'HGQU6VE5X73Q0K8N';
+    const BOT_TOKEN = '8893728146:AAHWfrIVJ4vVHct7YzL1sRPErGK8thf28Ew';
+    
+    // Replace with your personal Telegram Chat ID (obtainable from @userinfobot)
+    const CHAT_ID = 'YOUR_TELEGRAM_CHAT_ID'; 
+
+    let moistureGauge, tiltGauge;
+    let alertSent = false;
+
+    google.charts.load('current', {'packages':['gauge']});
+    google.charts.setOnLoadCallback(initGauges);
+
+    function initGauges() {
+      const optionsMoisture = { width: 200, height: 200, redFrom: 80, redTo: 100, yellowFrom: 60, yellowTo: 80, minorTicks: 5, max: 100 };
+      const optionsTilt = { width: 200, height: 200, redFrom: 45, redTo: 90, yellowFrom: 25, yellowTo: 45, minorTicks: 5, max: 90 };
+
+      moistureGauge = new google.visualization.Gauge(document.getElementById('gauge_moisture'));
+      tiltGauge = new google.visualization.Gauge(document.getElementById('gauge_tilt'));
+
+      moistureGauge.draw(google.visualization.arrayToDataTable([['Label', 'Value'], ['Moisture', 0]]), optionsMoisture);
+      tiltGauge.draw(google.visualization.arrayToDataTable([['Label', 'Value'], ['Tilt', 0]]), optionsTilt);
+
+      fetchThingSpeakData();
+      setInterval(fetchThingSpeakData, 15000);
     }
 
-    let tiltGauge, moistureGauge, gaugeData, telemetryChart;
-    let activeChannelId = '3474434';
-    let resultsCount = 15;
-    let READ_API_URL = `https://api.thingspeak.com/channels/${activeChannelId}/feeds.json?results=${resultsCount}`;
-    let previousMoisture = null;
+    async function fetchThingSpeakData() {
+      try {
+        const response = await fetch(`https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds/last.json?api_key=${READ_API_KEY}`);
+        const data = await response.json();
 
-    function logEvent(msg) {
-      const consoleEl = document.getElementById('log-console');
-      if (consoleEl) {
-        const time = new Date().toLocaleTimeString();
-        consoleEl.innerHTML += `<div>[${time}] ${msg}</div>`;
-        consoleEl.scrollTop = consoleEl.scrollHeight;
+        const moisture = parseFloat(data.field1) || 0;
+        const tilt = parseFloat(data.field2) || 0;
+
+        document.getElementById('moistureValue').innerText = moisture + ' %';
+        document.getElementById('tiltValue').innerText = tilt + ' °';
+
+        moistureGauge.draw(google.visualization.arrayToDataTable([['Label', 'Value'], ['Moisture', moisture]]), { width: 200, height: 200, redFrom: 80, redTo: 100, max: 100 });
+        tiltGauge.draw(google.visualization.arrayToDataTable([['Label', 'Value'], ['Tilt', tilt]]), { width: 200, height: 200, redFrom: 45, redTo: 90, max: 90 });
+
+        checkThresholds(moisture, tilt);
+      } catch (err) {
+        console.error("Telemetry update error:", err);
       }
     }
 
-    function clearConsole() {
-      document.getElementById('log-console').innerHTML = '<div>[CONSOLE CLEARED]</div>';
-    }
-
-    function enterDashboard() {
-      document.getElementById('home-screen').classList.add('hidden');
-      logEvent('User entered main telemetry screen.');
-    }
-
-    function toggleKioskMode() {
-      document.body.classList.toggle('kiosk-mode');
-    }
-
-    function switchNode(nodeId) {
-      activeChannelId = nodeId;
-      previousMoisture = null;
-      const nodeBadge = document.getElementById('active-node-badge');
-      logEvent(`Switched active node view to: ${nodeId}`);
-      
-      if (nodeId === 'DEMO_BETA') {
-        nodeBadge.innerText = 'ESP32 Node: Beta-2';
-        updateDashboardWithValues(12.4, 45.0);
-      } else if (nodeId === 'DEMO_GAMMA') {
-        nodeBadge.innerText = 'ESP32 Node: Gamma-3';
-        updateDashboardWithValues(38.2, 78.5);
+    function checkThresholds(moisture, tilt) {
+      const banner = document.getElementById('alertBanner');
+      if (moisture > 80 || tilt > 45) {
+        banner.classList.remove('hidden');
+        if (!alertSent) {
+          sendTelegramAlert(moisture, tilt);
+          alertSent = true;
+        }
       } else {
-        nodeBadge.innerText = 'ESP32 Node: Alpha-1';
-        READ_API_URL = `https://api.thingspeak.com/channels/${activeChannelId}/feeds.json?results=${resultsCount}`;
-        fetchTelemetryData();
+        banner.classList.add('hidden');
+        alertSent = false;
       }
     }
 
-    function initDashboard() {
-      gaugeData = new google.visualization.DataTable();
-      gaugeData.addColumn('string', 'Label');
-      gaugeData.addColumn('number', 'Value');
-      gaugeData.addRows([['Tilt (°)', 0], ['Moisture (%)', 0]]);
-
-      const tiltElem = document.getElementById('tilt_gauge');
-      const moistureElem = document.getElementById('moisture_gauge');
-
-      if (tiltElem && moistureElem) {
-        tiltGauge = new google.visualization.Gauge(tiltElem);
-        moistureGauge = new google.visualization.Gauge(moistureElem);
-      }
-
-      initChart();
-      drawSlopeVisualizer(0);
-      fetchTelemetryData();
-      setInterval(fetchTelemetryData, 15000);
-    }
-
-    function calculateLRI(tilt, moisture) {
-      const tiltFactor = Math.min(tilt / 90, 1) * 0.6;
-      const moistureFactor = Math.min(moisture / 100, 1) * 0.4;
-      const lriScore = Math.round((tiltFactor + moistureFactor) * 100);
-
-      const lriVal = document.getElementById('lri-value');
-      const lriStatus = document.getElementById('lri-status');
-      const lriProgress = document.getElementById('lri-progress');
-
-      if (lriVal && lriStatus && lriProgress) {
-        lriVal.innerText = `${lriScore}%`;
-        lriProgress.style.width = `${lriScore}%`;
-
-        if (lriScore >= 60) {
-          lriVal.className = 'fs-2 fw-bold text-danger glow-cyan';
-          lriStatus.innerText = 'CRITICAL LANDSLIDE RISK';
-          lriStatus.className = 'badge bg-dark border border-danger text-danger rounded-pill ms-2';
-          lriProgress.className = 'progress-bar bg-danger';
-        } else if (lriScore >= 35) {
-          lriVal.className = 'fs-2 fw-bold text-warning glow-cyan';
-          lriStatus.innerText = 'ELEVATED RISK LEVEL';
-          lriStatus.className = 'badge bg-dark border border-warning text-warning rounded-pill ms-2';
-          lriProgress.className = 'progress-bar bg-warning';
-        } else {
-          lriVal.className = 'fs-2 fw-bold text-info glow-cyan';
-          lriStatus.innerText = 'LOW RISK LEVEL';
-          lriStatus.className = 'badge bg-dark border border-info text-info rounded-pill ms-2';
-          lriProgress.className = 'progress-bar bg-info';
-        }
-      }
-    }
-
-    function drawSlopeVisualizer(angleDeg) {
-      const canvas = document.getElementById('slopeCanvas');
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      const w = canvas.width;
-      const h = canvas.height;
-
-      ctx.clearRect(0, 0, w, h);
-      ctx.save();
-      ctx.translate(w / 2, h / 2 + 10);
-      ctx.rotate((-angleDeg * Math.PI) / 180);
-
-      ctx.fillStyle = angleDeg >= 35 ? '#ef4444' : (angleDeg >= 15 ? '#f59e0b' : '#38bdf8');
-      ctx.beginPath();
-      ctx.moveTo(-220, 10);
-      ctx.lineTo(220, -10);
-      ctx.lineTo(220, 30);
-      ctx.lineTo(-220, 30);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.fillStyle = '#f8fafc';
-      ctx.fillRect(-15, -15, 30, 15);
-
-      ctx.restore();
-    }
-
-    function initChart() {
-      const chartElem = document.getElementById('telemetryChart');
-      if (!chartElem) return;
-
-      const ctx = chartElem.getContext('2d');
-      telemetryChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: [],
-          datasets: [
-            { label: 'Tilt Angle (°)', data: [], borderColor: '#38bdf8', borderWidth: 3, fill: false, tension: 0.3 },
-            { label: 'Soil Moisture (%)', data: [], borderColor: '#10b981', borderWidth: 3, fill: false, tension: 0.3 }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            x: { ticks: { color: '#94a3b8' } },
-            y: { ticks: { color: '#94a3b8' }, beginAtZero: true, max: 100 }
-          }
-        }
-      });
-    }
-
-    function updateDashboardWithValues(latestTilt, latestMoisture) {
-      if (gaugeData && tiltGauge && moistureGauge) {
-        gaugeData.setValue(0, 1, latestTilt);
-        gaugeData.setValue(1, 1, latestMoisture);
-        tiltGauge.draw(gaugeData, { width: 180, height: 180, max: 90 });
-        moistureGauge.draw(gaugeData, { width: 180, height: 180, max: 100 });
-      }
-
-      document.getElementById('tilt-val').innerText = latestTilt.toFixed(1) + '°';
-      document.getElementById('moisture-val').innerText = latestMoisture.toFixed(1) + '%';
-
-      const trendBadge = document.getElementById('moisture-trend');
-      if (trendBadge && previousMoisture !== null) {
-        const diff = latestMoisture - previousMoisture;
-        if (diff > 5) {
-          trendBadge.innerText = `⚠️ Rapid Rise (+${diff.toFixed(1)}%)`;
-          trendBadge.className = 'badge bg-dark border border-danger text-danger';
-          logEvent(`⚠️ RAPID SATURATION WARNING: Soil moisture increased by +${diff.toFixed(1)}% in last sync!`);
-        } else if (diff > 0) {
-          trendBadge.innerText = `📈 Slow Rise (+${diff.toFixed(1)}%)`;
-          trendBadge.className = 'badge bg-dark border border-warning text-warning';
-        } else if (diff < 0) {
-          trendBadge.innerText = `📉 Drying (${diff.toFixed(1)}%)`;
-          trendBadge.className = 'badge bg-dark border border-info text-info';
-        } else {
-          trendBadge.innerText = `Stable (0.0%)`;
-          trendBadge.className = 'badge bg-dark border border-secondary text-secondary';
-        }
-      }
-      previousMoisture = latestMoisture;
-
-      drawSlopeVisualizer(latestTilt);
-      calculateLRI(latestTilt, latestMoisture);
-    }
-
-    async function fetchTelemetryData() {
-      if (activeChannelId.startsWith('DEMO')) return;
-
-      try {
-        const response = await fetch(READ_API_URL);
-        const data = await response.json();
-        const feeds = data.feeds;
-
-        if (feeds && feeds.length > 0) {
-          const latestFeed = feeds[feeds.length - 1];
-          const latestTilt = parseFloat(latestFeed.field1) || 0;
-          const latestMoisture = parseFloat(latestFeed.field2) || 0;
-
-          updateDashboardWithValues(latestTilt, latestMoisture);
-          logEvent(`Telemetry sync: Tilt=${latestTilt.toFixed(1)}°, Moisture=${latestMoisture.toFixed(1)}%`);
-
-          if (telemetryChart) {
-            const labels = feeds.map(f => new Date(f.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-            telemetryChart.data.labels = labels;
-            telemetryChart.data.datasets[0].data = feeds.map(f => parseFloat(f.field1) || 0);
-            telemetryChart.data.datasets[1].data = feeds.map(f => parseFloat(f.field2) || 0);
-            telemetryChart.update();
-          }
-        }
-      } catch (err) {
-        logEvent('Telemetry fetch error. Using cached stream.');
-      }
-    }
-
-    function handleInstallationSubmit(event) {
-      event.preventDefault();
-      const form = event.target;
-
-      const newRequest = {
-        id: 'REQ-' + Date.now().toString().slice(-4),
-        locality: form[0].value,
-        officer: form[1].value,
-        phone: form[2].value,
-        profile: form[3].value,
-        coords: form[4].value,
-        timestamp: new Date().toLocaleString()
-      };
-
-      const existingRequests = JSON.parse(localStorage.getItem('terra_installations') || '[]');
-      existingRequests.unshift(newRequest);
-      localStorage.setItem('terra_installations', JSON.stringify(existingRequests));
-
-      logEvent(`Installation request logged for: ${newRequest.locality}`);
-      alert(`Installation request for "${newRequest.locality}" saved successfully!`);
-      
-      form.reset();
-      const modalEl = document.getElementById('installationModal');
-      bootstrap.Modal.getInstance(modalEl).hide();
-    }
-
-    function updateChartRange(points) {
-      resultsCount = points;
-      READ_API_URL = `https://api.thingspeak.com/channels/${activeChannelId}/feeds.json?results=${resultsCount}`;
-      fetchTelemetryData();
-    }
-
-    async function downloadCSV() {
-      try {
-        const response = await fetch(`https://api.thingspeak.com/channels/${activeChannelId}/feeds.json?days=7`);
-        const data = await response.json();
-        const feeds = data.feeds;
-
-        if (!feeds || feeds.length === 0) {
-          alert('No telemetry data available for CSV export.');
-          return;
-        }
-
-        let csvContent = 'data:text/csv;charset=utf-8,Entry ID,Timestamp,Tilt Angle (deg),Soil Moisture (%)\n';
-        feeds.forEach(feed => {
-          csvContent += `"${feed.entry_id}","${new Date(feed.created_at).toLocaleString()}",${feed.field1 || 0},${feed.field2 || 0}\n`;
-        });
-
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement('a');
-        link.setAttribute('href', encodedUri);
-        link.setAttribute('download', `TerraWatch_Telemetry_${new Date().toISOString().slice(0,10)}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } catch (err) {
-        console.error('CSV Export Error:', err);
-      }
-    }
-
-    function exportPDF() {
-      const element = document.getElementById('report-content');
-      const opt = {
-        margin: 0.3,
-        filename: `TerraWatch_Report_${new Date().toISOString().slice(0,10)}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-      };
-      html2pdf().set(opt).from(element).save();
-    }
-
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then(reg => logEvent('PWA Service Worker registered successfully.'))
-          .catch(err => console.log('Service Worker registration failed:', err));
-      });
+    function sendTelegramAlert(moisture, tilt) {
+      if (CHAT_ID === 'YOUR_TELEGRAM_CHAT_ID') return;
+      const text = `⚠️ *TerraWatch Landslide Alert* %0AMoisture: ${moisture}%25%0ATilt Angle: ${tilt}°%0A*Action Required!*`;
+      fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${text}&parse_mode=Markdown`);
     }
   </script>
 </body>
