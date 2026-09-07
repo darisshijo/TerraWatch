@@ -14,7 +14,7 @@
 <body class="p-6">
   <div class="max-w-6xl mx-auto space-y-6">
     
-    <!-- Header Navigation -->
+    <!-- Navigation Header -->
     <div class="flex justify-between items-center glass p-4 rounded-xl">
       <div>
         <h1 class="text-2xl font-bold text-sky-400">TerraWatch Pro</h1>
@@ -23,13 +23,13 @@
       <a href="admin.html" class="bg-sky-600 hover:bg-sky-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Admin Portal</a>
     </div>
 
-    <!-- Alert Notification Banner -->
+    <!-- Alert Banner -->
     <div id="alertBanner" class="hidden glass border-l-4 border-red-500 p-4 rounded-xl text-red-400 font-semibold flex justify-between items-center">
       <span id="alertMessage">⚠️ LANDSLIDE RISK DETECTED!</span>
       <span class="text-xs text-slate-400">Telegram Notification Triggered</span>
     </div>
 
-    <!-- Live Gauges Section -->
+    <!-- Live Telemetry Gauges -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div class="glass p-6 rounded-xl flex flex-col items-center">
         <h3 class="text-lg font-medium text-slate-300 mb-4">Soil Moisture Saturation (%)</h3>
@@ -44,7 +44,7 @@
       </div>
     </div>
 
-    <!-- ThingSpeak Dynamic Chart -->
+    <!-- ThingSpeak Dynamic Telemetry Chart -->
     <div class="glass p-6 rounded-xl">
       <h3 class="text-lg font-medium text-slate-300 mb-4">Live Channel Telemetry Feed</h3>
       <iframe class="w-full h-80 rounded-lg border border-slate-700" src="https://thingspeak.com/channels/3474434/charts/1?bgcolor=%231e293b&color=%2338bdf8&dynamic=true&type=line"></iframe>
@@ -56,8 +56,6 @@
     const CHANNEL_ID = '3474434';
     const READ_API_KEY = 'HGQU6VE5X73Q0K8N';
     const BOT_TOKEN = '8893728146:AAHWfrIVJ4vVHct7YzL1sRPErGK8thf28Ew';
-    
-    // Replace with your personal Telegram Chat ID (obtainable from @userinfobot)
     const CHAT_ID = 'YOUR_TELEGRAM_CHAT_ID'; 
 
     let moistureGauge, tiltGauge;
@@ -116,7 +114,7 @@
 
     function sendTelegramAlert(moisture, tilt) {
       if (CHAT_ID === 'YOUR_TELEGRAM_CHAT_ID') return;
-      const text = `⚠️ *TerraWatch Landslide Alert* %0AMoisture: ${moisture}%25%0ATilt Angle: ${tilt}°%0A*Action Required!*`;
+      const text = `⚠️ *TerraWatch Alert* %0AMoisture: ${moisture}%25%0ATilt Angle: ${tilt}°`;
       fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${text}&parse_mode=Markdown`);
     }
   </script>
