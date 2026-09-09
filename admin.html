@@ -1,35 +1,595 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TerraWatch Pro - Admin Portal</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body { background-color: #0f172a; color: #f8fafc; font-family: sans-serif; }
-    .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TerraWatch Pro - Admin Gateway</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --bg-dark: #0b1120;
+            --card-bg: #1e293b;
+            --border-color: #334155;
+            --accent-color: #38bdf8;
+        }
+        body {
+            background-color: var(--bg-dark);
+            color: #f8fafc;
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 0;
+            min-height: 100vh;
+        }
+        #authOverlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(11, 17, 32, 0.95);
+            backdrop-filter: blur(12px);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: #0f172a;
+            border-right: 1px solid var(--border-color);
+            position: fixed;
+            top: 0;
+            left: 0;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
+        #main-content {
+            margin-left: var(--sidebar-width);
+            width: calc(100% - var(--sidebar-width));
+            padding: 2rem;
+            min-height: 100vh;
+        }
+        .nav-link {
+            color: #cbd5e1;
+            padding: 0.85rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            cursor: pointer;
+            border-radius: 8px;
+            margin: 3px 12px;
+            transition: all 0.2s ease;
+        }
+        .nav-link:hover {
+            color: var(--accent-color);
+            background: rgba(56, 189, 248, 0.1);
+        }
+        .nav-link.active {
+            color: #fff;
+            background: #0284c7;
+            font-weight: 600;
+        }
+        .admin-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+        .text-subtle {
+            color: #94a3b8 !important;
+        }
+        .table-dark-custom {
+            --bs-table-bg: var(--card-bg);
+            --bs-table-border-color: var(--border-color);
+            --bs-table-color: #f8fafc;
+        }
+        .form-control, .form-select {
+            background-color: #0f172a !important;
+            border-color: var(--border-color) !important;
+            color: #f8fafc !important;
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: #0f172a !important;
+            border-color: var(--accent-color) !important;
+            box-shadow: 0 0 0 0.25rem rgba(56, 189, 248, 0.25);
+        }
+        .tab-section {
+            display: none;
+        }
+        .tab-section.active {
+            display: block;
+        }
+    </style>
 </head>
-<body class="p-6">
-  <div class="max-w-4xl mx-auto space-y-6">
-    <div class="flex justify-between items-center glass p-4 rounded-xl">
-      <h1 class="text-xl font-bold text-sky-400">TerraWatch Node Administration</h1>
-      <a href="index.html" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm transition">Back to Dashboard</a>
+<body>
+
+    <!-- SECURITY LOCK OVERLAY -->
+    <div id="authOverlay">
+        <div class="admin-card text-center p-4 border-info shadow-lg" style="max-width: 380px; width: 90%;">
+            <div class="mb-3">
+                <i class="bi bi-shield-lock-fill text-info" style="font-size: 3rem;"></i>
+            </div>
+            <h4 class="fw-bold mb-1 text-white">TerraWatch Admin</h4>
+            <p class="text-subtle small mb-4">Hardware Creator Verification</p>
+            <form onsubmit="handleAuth(event)">
+                <div class="mb-3">
+                    <input type="password" id="adminPin" class="form-control text-center fs-5" placeholder="Enter PIN" autofocus required>
+                    <div id="authError" class="text-danger small mt-2 d-none">Invalid PIN. Access denied.</div>
+                </div>
+                <button type="submit" class="btn btn-info w-100 fw-bold mb-2">Unlock Maker Console</button>
+                <a href="index.html" class="btn btn-outline-secondary w-100 btn-sm text-light">Return to Public Dashboard</a>
+            </form>
+            <div class="text-subtle small mt-3" style="font-size: 0.75rem;">Default master PIN: <code>1234</code></div>
+        </div>
     </div>
 
-    <div class="glass p-6 rounded-xl space-y-4">
-      <h2 class="text-lg font-semibold text-slate-200">System Configuration Summary</h2>
-      <div class="grid grid-cols-2 gap-4 text-sm text-slate-300">
-        <div class="p-3 bg-slate-800 rounded-lg">
-          <p class="text-xs text-slate-400">ThingSpeak Channel</p>
-          <p class="font-mono font-bold text-sky-400">3474434</p>
+    <!-- SIDEBAR -->
+    <div id="sidebar">
+        <div class="p-3 border-bottom border-secondary d-flex align-items-center gap-2">
+            <i class="bi bi-cpu-fill text-info fs-4"></i>
+            <span class="fw-bold fs-5 text-white">Maker Console</span>
         </div>
-        <div class="p-3 bg-slate-800 rounded-lg">
-          <p class="text-xs text-slate-400">Telegram Bot Handle</p>
-          <p class="font-mono font-bold text-sky-400">@Terrawtc_bot</p>
+        <nav class="mt-3 flex-grow-1">
+            <a href="index.html" class="nav-link"><i class="bi bi-box-arrow-left"></i> Public Dashboard</a>
+            <div class="nav-link active" onclick="switchTab('params', this)"><i class="bi bi-sliders"></i> System Overview</div>
+            <div class="nav-link" onclick="switchTab('nodes', this)"><i class="bi bi-hdd-network"></i> Node Deployments</div>
+            <div class="nav-link" onclick="switchTab('apikeys', this)"><i class="bi bi-key-fill"></i> API Integrations</div>
+            <div class="nav-link" onclick="switchTab('logs', this)"><i class="bi bi-terminal"></i> Live Diagnostics</div>
+        </nav>
+        <div class="p-3 border-top border-secondary">
+            <button class="btn btn-outline-danger w-100 btn-sm d-flex align-items-center justify-content-center gap-2" onclick="logoutAdmin()">
+                <i class="bi bi-lock-fill"></i> Lock Console
+            </button>
         </div>
-      </div>
     </div>
-  </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main-content">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+            <div>
+                <h2 class="fw-bold m-0 text-white" id="sectionHeader">System Overview</h2>
+                <small class="text-subtle">Hardware telemetry configuration and credential dispatch</small>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#changePinModal">
+                    <i class="bi bi-shield-lock me-1"></i> Change PIN
+                </button>
+                <button class="btn btn-outline-light btn-sm" onclick="testConnection()">
+                    <i class="bi bi-arrow-clockwise me-1"></i> Ping ThingSpeak
+                </button>
+            </div>
+        </div>
+
+        <!-- TAB 1: SYSTEM OVERVIEW -->
+        <div id="tab-params" class="tab-section active">
+            <div class="row g-4 mb-4">
+                <div class="col-md-4">
+                    <div class="admin-card">
+                        <span class="text-subtle small">Active Endpoints</span>
+                        <h3 id="nodeCountBadge" class="fw-bold mt-2 mb-0 text-white">1 Active</h3>
+                        <span class="badge bg-success-subtle text-success mt-2">Telemetry Operational</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="admin-card">
+                        <span class="text-subtle small">ThingSpeak Cloud API</span>
+                        <h3 id="api-status" class="fw-bold mt-2 mb-0 text-info">Checking...</h3>
+                        <span id="api-latency" class="badge bg-info-subtle text-info mt-2">Latency: -- ms</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="admin-card">
+                        <span class="text-subtle small">Pending Field Requests</span>
+                        <h3 id="pendingReqCount" class="fw-bold mt-2 mb-0 text-warning">0 Pending</h3>
+                        <span class="badge bg-warning-subtle text-warning mt-2">Awaiting Approval</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="admin-card border-secondary">
+                <h5 class="fw-bold mb-2 text-white"><i class="bi bi-info-circle me-2 text-info"></i>System Status Summary</h5>
+                <p class="text-light mb-0" style="opacity: 0.9;">All core telemetry metrics are synchronized with local browser storage. Public dashboard readers access live calculations from your configured ThingSpeak feed, while critical thresholds automatically alert your specified Telegram receiver.</p>
+            </div>
+        </div>
+
+        <!-- TAB 2: HARDWARE NODE DEPLOYMENTS -->
+        <div id="tab-nodes" class="tab-section">
+            <!-- PENDING PUBLIC REQUESTS TRAY -->
+            <div class="admin-card mb-4 border-warning" id="pendingCard" style="display: none;">
+                <h5 class="fw-bold text-warning mb-2"><i class="bi bi-inbox-fill me-2"></i>Incoming Public Deployment Requests</h5>
+                <p class="text-subtle small mb-3">Field users requested these deployment sites via the public dashboard. Approve them to deploy into the active node fleet.</p>
+                <div class="table-responsive">
+                    <table class="table table-dark-custom align-middle mb-0">
+                        <thead>
+                            <tr class="text-light">
+                                <th>Sector / Node ID</th>
+                                <th>Sensor Requirement & Location</th>
+                                <th class="text-end">Maker Decision</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pendingTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ACTIVE HARDWARE -->
+            <div class="admin-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h5 class="fw-bold mb-0 text-white">Active Node Fleet</h5>
+                        <small class="text-subtle">Configured ESP32 endpoints streaming live telemetry</small>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-dark-custom align-middle">
+                        <thead>
+                            <tr class="text-light">
+                                <th>Device ID</th>
+                                <th>Sensors & Pin Mapping</th>
+                                <th>Cycle</th>
+                                <th>Status</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="activeNodeTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: API KEYS CONFIGURATION -->
+        <div id="tab-apikeys" class="tab-section">
+            <div class="admin-card mb-4 border-info">
+                <h5 class="fw-bold mb-3 text-white"><i class="bi bi-cloud-arrow-down me-2 text-info"></i>ThingSpeak API Credentials</h5>
+                <form onsubmit="saveThingSpeakSettings(event)">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label text-light">Channel ID</label>
+                            <input type="text" class="form-control" id="channelId" placeholder="e.g. 3474434" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label text-light">Read API Key</label>
+                            <input type="text" class="form-control" id="readKey" placeholder="e.g. HGQU6VE5X73Q0K8N" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label text-light">Write API Key (Optional)</label>
+                            <input type="text" class="form-control" id="writeKey" placeholder="e.g. ABC123XYZ456">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-info fw-bold">Save ThingSpeak Keys</button>
+                    <button type="button" class="btn btn-outline-light ms-2" onclick="testConnection()">Verify Feed Connection</button>
+                    <span id="tsSaveAlert" class="text-success ms-3 d-none"><i class="bi bi-check-circle-fill me-1"></i> ThingSpeak Keys Updated!</span>
+                </form>
+            </div>
+
+            <div class="admin-card border-info">
+                <h5 class="fw-bold mb-3 text-white"><i class="bi bi-telegram me-2 text-info"></i>Telegram Dispatch Credentials</h5>
+                <form onsubmit="saveTelegramSettings(event)">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-light">Bot API Token</label>
+                            <input type="text" class="form-control" id="tgTokenInput" placeholder="e.g. 123456789:ABCdefGHIjklMNOpqrSTUvwxYZ" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-light">Receiver Chat ID</label>
+                            <input type="text" class="form-control" id="tgChatInput" placeholder="e.g. -1001234567890 or 98765432" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-info fw-bold">Save Telegram Keys</button>
+                    <button type="button" class="btn btn-outline-light ms-2" onclick="sendTestTelegram()">Send Test Alert</button>
+                    <span id="tgSaveAlert" class="text-success ms-3 d-none"><i class="bi bi-check-circle-fill me-1"></i> Telegram Keys Updated!</span>
+                </form>
+            </div>
+        </div>
+
+        <!-- TAB 4: LIVE DIAGNOSTICS & LOGS -->
+        <div id="tab-logs" class="tab-section">
+            <div class="admin-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold m-0 text-white"><i class="bi bi-terminal me-2"></i>Diagnostics & Event Log</h5>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="clearLogs()">Clear Log</button>
+                </div>
+                <div id="logConsole" style="background:#090d16; border-radius: 8px; padding: 15px; font-family: monospace; font-size: 0.85rem; height: 350px; overflow-y: auto; color: #a5f3fc;">
+                    <div>[SYSTEM] Admin Gateway initialized. Console ready.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CHANGE ADMIN PIN -->
+    <div class="modal fade" id="changePinModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark text-light border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-shield-lock me-2"></i>Change Admin PIN</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form onsubmit="updateAdminPin(event)">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label text-light">Current PIN</label>
+                            <input type="password" class="form-control" id="currentPin" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-light">New PIN</label>
+                            <input type="password" class="form-control" id="newPin" required>
+                        </div>
+                        <div id="pinChangeError" class="text-danger small d-none">Incorrect current PIN.</div>
+                    </div>
+                    <div class="modal-footer border-secondary">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-info fw-bold">Update PIN</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const DEFAULT_PIN_HASH = "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4"; // SHA-256 for '1234'
+
+        async function sha256(message) {
+            const msgBuffer = new TextEncoder().encode(message);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        async function handleAuth(e) {
+            e.preventDefault();
+            const entered = document.getElementById('adminPin').value;
+            const hash = await sha256(entered);
+            const activeHash = localStorage.getItem('tw_admin_pinhash') || DEFAULT_PIN_HASH;
+
+            if (hash === activeHash) {
+                sessionStorage.setItem('tw_admin_authed', 'true');
+                document.getElementById('authOverlay').style.display = 'none';
+                initAdmin();
+            } else {
+                document.getElementById('authError').classList.remove('d-none');
+            }
+        }
+
+        function logoutAdmin() {
+            sessionStorage.removeItem('tw_admin_authed');
+            window.location.reload();
+        }
+
+        async function updateAdminPin(e) {
+            e.preventDefault();
+            const curr = document.getElementById('currentPin').value;
+            const next = document.getElementById('newPin').value;
+            const currHash = await sha256(curr);
+            const activeHash = localStorage.getItem('tw_admin_pinhash') || DEFAULT_PIN_HASH;
+
+            if (currHash === activeHash) {
+                const nextHash = await sha256(next);
+                localStorage.setItem('tw_admin_pinhash', nextHash);
+                bootstrap.Modal.getInstance(document.getElementById('changePinModal')).hide();
+                logEvent("Admin Master PIN updated.");
+                alert('PIN successfully changed!');
+            } else {
+                document.getElementById('pinChangeError').classList.remove('d-none');
+            }
+        }
+
+        function switchTab(tabKey, element) {
+            document.querySelectorAll('.tab-section').forEach(sec => sec.classList.remove('active'));
+            document.querySelectorAll('#sidebar .nav-link').forEach(link => link.classList.remove('active'));
+            
+            const targetSection = document.getElementById(`tab-${tabKey}`);
+            if (targetSection) targetSection.classList.add('active');
+            if (element) element.classList.add('active');
+
+            const sectionTitles = {
+                params: "System Overview",
+                nodes: "Node Deployments",
+                apikeys: "API Integrations",
+                logs: "Live Diagnostics"
+            };
+            document.getElementById('sectionHeader').innerText = sectionTitles[tabKey] || "System Control";
+        }
+
+        const defaultNodes = [
+            { id: "ESP32-NODE-01", sensors: "MPU6050 (I2C: 21,22) + YL-69 (ADC: 34)", interval: 15, status: "Active" }
+        ];
+
+        function getAllNodes() {
+            const raw = localStorage.getItem('tw_registered_nodes');
+            return raw ? JSON.parse(raw) : defaultNodes;
+        }
+
+        function saveNodeCollection(nodes) {
+            localStorage.setItem('tw_registered_nodes', JSON.stringify(nodes));
+            renderNodeViews();
+        }
+
+        function renderNodeViews() {
+            const nodes = getAllNodes();
+            const activeBody = document.getElementById('activeNodeTableBody');
+            const pendingBody = document.getElementById('pendingTableBody');
+            const pendingCard = document.getElementById('pendingCard');
+
+            activeBody.innerHTML = '';
+            pendingBody.innerHTML = '';
+
+            let activeCount = 0;
+            let pendingCount = 0;
+
+            nodes.forEach((node, idx) => {
+                if (node.status === "Pending Approval") {
+                    pendingCount++;
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><code class="text-info">${node.id}</code></td>
+                        <td class="text-light">${node.sensors}</td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-success fw-bold me-1" onclick="approveNode(${idx})">
+                                <i class="bi bi-check-lg"></i> Approve
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteNode(${idx})">
+                                <i class="bi bi-x-lg"></i> Reject
+                            </button>
+                        </td>
+                    `;
+                    pendingBody.appendChild(tr);
+                } else {
+                    activeCount++;
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><code class="text-info">${node.id}</code></td>
+                        <td class="text-light">${node.sensors}</td>
+                        <td class="text-light">HTTP (${node.interval}s)</td>
+                        <td><span class="badge bg-success">Active</span></td>
+                        <td class="text-end">
+                            <button class="btn btn-outline-danger btn-sm" onclick="deleteNode(${idx})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    activeBody.appendChild(tr);
+                }
+            });
+
+            document.getElementById('nodeCountBadge').innerText = `${activeCount} Active`;
+            document.getElementById('pendingReqCount').innerText = `${pendingCount} Pending`;
+            pendingCard.style.display = pendingCount > 0 ? 'block' : 'none';
+        }
+
+        function approveNode(idx) {
+            const nodes = getAllNodes();
+            nodes[idx].status = "Active";
+            saveNodeCollection(nodes);
+            logEvent(`Field request approved: ${nodes[idx].id}`);
+        }
+
+        function deleteNode(idx) {
+            const nodes = getAllNodes();
+            const removed = nodes.splice(idx, 1);
+            saveNodeCollection(nodes);
+            logEvent(`Endpoint removed: ${removed[0].id}`);
+        }
+
+        function saveThingSpeakSettings(e) {
+            e.preventDefault();
+            localStorage.setItem('ts_channel', document.getElementById('channelId').value.trim());
+            localStorage.setItem('ts_read_key', document.getElementById('readKey').value.trim());
+            localStorage.setItem('ts_write_key', document.getElementById('writeKey').value.trim());
+
+            const alertBox = document.getElementById('tsSaveAlert');
+            alertBox.classList.remove('d-none');
+            setTimeout(() => alertBox.classList.add('d-none'), 3000);
+            logEvent("ThingSpeak credentials saved to local storage.");
+            testConnection();
+        }
+
+        function saveTelegramSettings(e) {
+            e.preventDefault();
+            localStorage.setItem('tg_bot_token', document.getElementById('tgTokenInput').value.trim());
+            localStorage.setItem('tg_chat_id', document.getElementById('tgChatInput').value.trim());
+
+            const alertBox = document.getElementById('tgSaveAlert');
+            alertBox.classList.remove('d-none');
+            setTimeout(() => alertBox.classList.add('d-none'), 3000);
+            logEvent("Telegram API tokens updated.");
+        }
+
+        async function sendTestTelegram() {
+            const token = localStorage.getItem('tg_bot_token');
+            const chat = localStorage.getItem('tg_chat_id');
+            if (!token || !chat) {
+                alert('Save Bot Token and Chat ID before sending a test.');
+                return;
+            }
+            try {
+                const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: chat,
+                        text: "🛠️ *TerraWatch Maker Alert*: Telegram bot webhook test successful.",
+                        parse_mode: "Markdown"
+                    })
+                });
+                if (res.ok) {
+                    alert("Test ping dispatched to Telegram!");
+                    logEvent("Telegram test alert transmitted successfully.");
+                } else {
+                    alert("Telegram rejected request. Check Bot Token and Chat ID.");
+                    logEvent("Telegram ping failed. Bad credentials.", true);
+                }
+            } catch (err) {
+                alert("Connection failed: " + err.message);
+                logEvent(`Telegram error: ${err.message}`, true);
+            }
+        }
+
+        async function testConnection() {
+            const channel = localStorage.getItem('ts_channel') || document.getElementById('channelId').value;
+            const key = localStorage.getItem('ts_read_key') || document.getElementById('readKey').value;
+            const statusEl = document.getElementById('api-status');
+            const latencyEl = document.getElementById('api-latency');
+
+            statusEl.innerText = "Pinging...";
+            statusEl.className = "fw-bold mt-2 mb-0 text-warning";
+
+            const start = Date.now();
+            try {
+                const res = await fetch(`https://api.thingspeak.com/channels/${channel}/feeds.json?api_key=${key}&results=1`);
+                const lat = Date.now() - start;
+                if (res.ok) {
+                    statusEl.innerText = "200 OK";
+                    statusEl.className = "fw-bold mt-2 mb-0 text-info";
+                    latencyEl.innerText = `Latency: ${lat}ms`;
+                    latencyEl.className = "badge bg-info-subtle text-info mt-2";
+                    logEvent(`ThingSpeak responded with 200 OK (${lat}ms).`);
+                } else {
+                    statusEl.innerText = "API Error";
+                    statusEl.className = "fw-bold mt-2 mb-0 text-danger";
+                    latencyEl.innerText = "Invalid Channel/Key";
+                    latencyEl.className = "badge bg-danger-subtle text-danger mt-2";
+                    logEvent("ThingSpeak rejected credentials.", true);
+                }
+            } catch (err) {
+                statusEl.innerText = "Offline";
+                statusEl.className = "fw-bold mt-2 mb-0 text-danger";
+                latencyEl.innerText = "Network Error";
+                latencyEl.className = "badge bg-danger-subtle text-danger mt-2";
+                logEvent("Network connection to ThingSpeak failed.", true);
+            }
+        }
+
+        function logEvent(msg, isError = false) {
+            const box = document.getElementById('logConsole');
+            if (!box) return;
+            const row = document.createElement('div');
+            row.style.color = isError ? '#f87171' : '#a5f3fc';
+            row.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            box.appendChild(row);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('logConsole').innerHTML = '<div>[SYSTEM] Diagnostics flushed.</div>';
+        }
+
+        function initAdmin() {
+            document.getElementById('channelId').value = localStorage.getItem('ts_channel') || '3474434';
+            document.getElementById('readKey').value = localStorage.getItem('ts_read_key') || 'HGQU6VE5X73Q0K8N';
+            document.getElementById('writeKey').value = localStorage.getItem('ts_write_key') || '';
+            document.getElementById('tgTokenInput').value = localStorage.getItem('tg_bot_token') || '';
+            document.getElementById('tgChatInput').value = localStorage.getItem('tg_chat_id') || '';
+            renderNodeViews();
+            testConnection();
+        }
+
+        window.onload = function() {
+            if (sessionStorage.getItem('tw_admin_authed') === 'true') {
+                document.getElementById('authOverlay').style.display = 'none';
+                initAdmin();
+            }
+        };
+    </script>
 </body>
 </html>
