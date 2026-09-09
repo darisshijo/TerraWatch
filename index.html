@@ -1,689 +1,499 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TerraWatch Pro - Landslide Early Warning System</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TerraWatch Pro - Live Telemetry & Threat Analysis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <!-- Charting & PDF Libraries -->
+    <script src="https://www.gstatic.com/charts/loader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-<!-- PWA Manifest Link -->
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#38bdf8">
-
-<!-- Fonts & Icons -->
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-
-<!-- Libraries (Explicitly Ordered) -->
-<script src="https://www.gstatic.com/charts/loader.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
-<style>
-:root {
---card-bg: rgba(15, 23, 42, 0.85);
---card-border: rgba(255, 255, 255, 0.12);
---text-main: #f8fafc;
---accent-cyan: #38bdf8;
---accent-green: #10b981;
---accent-yellow: #f59e0b;
---accent-red: #ef4444;
---neo-shadow-dark: rgba(0, 0, 0, 0.6);
---neo-shadow-light: rgba(255, 255, 255, 0.05);
-}
-
-body {
-background: linear-gradient(-45deg, #090d16, #0f172a, #1e1b4b, #0f172a);
-background-size: 400% 400%;
-animation: gradientBG 15s ease infinite;
-color: var(--text-main);
-font-family: 'Poppins', sans-serif;
-min-height: 100vh;
-margin: 0;
-padding-bottom: 40px;
-overflow-x: hidden;
-}
-
-@keyframes gradientBG {
-0% { background-position: 0% 50%; }
-50% { background-position: 100% 50%; }
-100% { background-position: 0% 50%; }
-}
-
-#home-screen {
-position: fixed;
-top: 0; left: 0; width: 100vw; height: 100vh;
-z-index: 9999;
-cursor: pointer;
-display: flex;
-flex-direction: column;
-justify-content: center;
-align-items: center;
-background: linear-gradient(135deg, rgba(9, 13, 22, 0.96), rgba(15, 23, 42, 0.96));
-backdrop-filter: blur(12px);
-transition: opacity 0.8s ease, visibility 0.8s ease;
-}
-
-#home-screen.hidden {
-opacity: 0;
-visibility: hidden;
-pointer-events: none;
-}
-
-.pulse-text {
-animation: blink 2s infinite;
-color: var(--accent-cyan);
-}
-
-@keyframes blink {
-0%, 100% { opacity: 1; }
-50% { opacity: 0.3; }
-}
-
-.glass-card {
-position: relative;
-z-index: 1;
-background: var(--card-bg);
-backdrop-filter: blur(16px);
--webkit-backdrop-filter: blur(16px);
-border: 1px solid var(--card-border);
-border-radius: 20px;
-box-shadow: 8px 8px 20px var(--neo-shadow-dark), -4px -4px 15px var(--neo-shadow-light);
-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.status-pulse {
-width: 10px;
-height: 10px;
-background-color: var(--accent-green);
-border-radius: 50%;
-display: inline-block;
-box-shadow: 0 0 0 rgba(16, 185, 129, 0.7);
-animation: pulse 1.6s infinite;
-}
-
-@keyframes pulse {
-0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
-100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-}
-
-.brand-title {
-font-family: 'Orbitron', sans-serif;
-font-weight: 900;
-letter-spacing: 2px;
-background: linear-gradient(45deg, #38bdf8, #818cf8, #c084fc);
--webkit-background-clip: text;
--webkit-text-fill-color: transparent;
-}
-
-.metric-value {
-font-family: 'Orbitron', sans-serif;
-font-size: 2.5rem;
-font-weight: 700;
-}
-
-.glow-cyan { text-shadow: 0 0 15px rgba(56, 189, 248, 0.6); }
-.glow-green { text-shadow: 0 0 15px rgba(16, 185, 129, 0.6); }
-
-.alert-banner {
-border-radius: 16px;
-padding: 18px 24px;
-font-weight: 600;
-}
-
-.gauge-container {
-display: flex;
-justify-content: center;
-align-items: center;
-min-height: 180px;
-}
-
-.btn-glass-info {
-background: rgba(56, 189, 248, 0.15);
-border: 1px solid rgba(56, 189, 248, 0.4);
-color: #38bdf8;
-}
-
-.btn-glass-info:hover {
-background: rgba(56, 189, 248, 0.3);
-color: #fff;
-}
-
-.log-console {
-font-family: monospace;
-font-size: 0.8rem;
-background: rgba(0, 0, 0, 0.6);
-border-radius: 10px;
-max-height: 120px;
-overflow-y: auto;
-padding: 10px;
-color: #38bdf8;
-}
-
-.modal-content {
-background: #0f172a;
-border: 1px solid rgba(56, 189, 248, 0.3);
-border-radius: 20px;
-color: #f8fafc;
-backdrop-filter: blur(20px);
-}
-</style>
+    <style>
+        :root {
+            --card-bg: rgba(15, 23, 42, 0.88);
+            --card-border: rgba(255, 255, 255, 0.12);
+            --text-main: #f8fafc;
+            --accent-cyan: #38bdf8;
+            --accent-danger: #ef4444;
+            --accent-warning: #f59e0b;
+        }
+        body {
+            background: linear-gradient(-45deg, #090d16, #0f172a, #1e1b4b, #0f172a);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            color: var(--text-main);
+            font-family: 'Poppins', sans-serif;
+            min-height: 100vh;
+            padding-bottom: 40px;
+        }
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: 18px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        .brand-title {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            background: linear-gradient(45deg, #38bdf8, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .metric-value { font-family: 'Orbitron', sans-serif; font-size: 2.3rem; font-weight: 700; }
+        .gauge-container { display: flex; justify-content: center; align-items: center; min-height: 180px; }
+        .analysis-box { background: rgba(0,0,0,0.45); border-left: 5px solid var(--accent-cyan); padding: 16px; border-radius: 0 10px 10px 0; }
+        .pulse-indicator {
+            display: inline-block;
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background-color: #10b981;
+            box-shadow: 0 0 10px #10b981;
+            margin-right: 6px;
+        }
+    </style>
 </head>
 <body>
 
-<!-- Fullscreen Landing Overlay -->
-<div id="home-screen" onclick="enterDashboard()">
-<div class="text-center p-4">
-<i class="bi bi-shield-exclamation text-info display-1 mb-3"></i>
-<h1 class="brand-title display-3 fw-bold mb-2">TERRAWATCH PRO</h1>
-<p class="lead text-light mb-4">Landslide Early Warning & Micro-Telemetry Monitoring System</p>
-<div class="mt-5">
-<span class="fs-5 pulse-text fw-semibold"><i class="bi bi-hand-index-thumb me-2"></i>CLICK ANYWHERE TO ENTER SYSTEM</span>
-</div>
-</div>
-</div>
-
-<!-- Navbar -->
+<!-- TOP NAVIGATION -->
 <nav class="navbar navbar-dark my-3">
-<div class="container glass-card py-2 px-4 flex-wrap gap-2">
-<a class="navbar-brand d-flex align-items-center gap-2" href="index.html">
-<i class="bi bi-shield-exclamation text-info fs-3"></i>
-<span class="brand-title fs-3">TERRAWATCH PRO</span>
-</a>
-
-<div class="ms-md-3">
-<select id="node-selector" class="form-select bg-dark text-info border-info form-select-sm rounded-pill px-3" onchange="switchNode(this.value)">
-<option value="3474434" selected>Node Alpha-1 (North Slope)</option>
-<option value="DEMO_BETA">Node Beta-2 (East Cut Road)</option>
-<option value="DEMO_GAMMA">Node Gamma-3 (Valley Ridge)</option>
-</select>
-</div>
-
-<div class="d-flex align-items-center gap-2 ms-auto flex-wrap">
-<button class="btn btn-outline-info btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#installationModal">
-<i class="bi bi-plus-circle me-1"></i> Request Node
-</button>
-<a href="admin.html" class="btn btn-outline-light btn-sm rounded-pill px-3">
-<i class="bi bi-shield-lock me-1"></i> Admin Portal
-</a>
-<button onclick="downloadCSV()" class="btn btn-glass-info btn-sm rounded-pill px-3 d-flex align-items-center gap-1">
-<i class="bi bi-download"></i> CSV
-</button>
-<button onclick="exportPDF()" class="btn btn-outline-light btn-sm rounded-pill px-3 d-flex align-items-center gap-1">
-<i class="bi bi-file-earmark-pdf"></i> PDF
-</button>
-</div>
-</div>
+    <div class="container glass-card py-2 px-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <a class="navbar-brand d-flex align-items-center gap-2 m-0" href="#">
+            <i class="bi bi-shield-exclamation text-info fs-3"></i>
+            <span class="brand-title fs-4">TERRAWATCH PRO</span>
+        </a>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="badge bg-dark border border-secondary text-light px-3 py-2" id="status-badge">
+                <span class="pulse-indicator" id="pulseDot"></span> <span id="syncText">Syncing Feeds</span>
+            </span>
+            <button class="btn btn-sm btn-primary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#requestNodeModal">
+                <i class="bi bi-plus-circle me-1"></i> Request Node
+            </button>
+            <button class="btn btn-sm btn-outline-light rounded-pill px-3" onclick="exportPDFReport()">
+                <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
+            </button>
+            <a href="admin.html" class="btn btn-sm btn-outline-info rounded-pill px-3">
+                <i class="bi bi-gear-fill me-1"></i> Admin
+            </a>
+        </div>
+    </div>
 </nav>
 
-<div class="container" id="report-content">
+<!-- MAIN CONTENT CONTAINER (PDF TARGET) -->
+<div class="container" id="dashboardReportContent">
 
-<!-- System Status Banner -->
-<div class="row mb-4">
-<div class="col-12">
-<div id="alert-banner" class="alert-banner bg-success text-white glass-card d-flex align-items-center justify-content-between">
-<div class="d-flex align-items-center gap-3">
-<i id="alert-icon" class="bi bi-check-circle-fill fs-2"></i>
-<div>
-<div class="text-uppercase small opacity-75 fw-bold d-flex align-items-center gap-2">
-System Status <span class="status-pulse" id="sensor-pulse"></span>
-</div>
-<div id="alert-text" class="fs-5">✅ SYSTEM NORMAL: PARAMETERS STABLE</div>
-</div>
-</div>
-<span class="badge bg-dark border border-secondary opacity-75 fs-6 rounded-pill d-none d-sm-block" id="active-node-badge">ESP32 Node: Alpha-1</span>
-</div>
-</div>
-</div>
+    <!-- LRI THREAT ASSESSMENT -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="glass-card p-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h5 class="text-info m-0"><i class="bi bi-speedometer2 me-2"></i>Composite Landslide Risk Index (LRI)</h5>
+                    <span id="lri-value" class="fs-2 fw-bold text-info">0%</span>
+                </div>
+                <div class="progress bg-dark border border-secondary" style="height: 14px; border-radius: 7px;">
+                    <div id="lri-progress" class="progress-bar bg-info" style="width: 0%; transition: width 0.6s ease-out;"></div>
+                </div>
+                
+                <div id="analysis-panel" class="analysis-box mt-4">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <h6 class="fw-bold m-0"><i class="bi bi-robot me-2"></i>Live System Analysis:</h6>
+                        <small class="text-muted" id="lastUpdated">Last sync: --</small>
+                    </div>
+                    <p id="analysis-text" class="mb-0 text-light">Awaiting telemetry stream to establish base threshold assessment...</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
-<!-- Landslide Risk Index (LRI) Banner Bar -->
-<div class="row mb-4">
-<div class="col-12">
-<div class="glass-card p-4">
-<div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-<div>
-<h5 class="text-info m-0"><i class="bi bi-speedometer2 me-2"></i>Composite Landslide Risk Index (LRI)</h5>
-<p class="small text-secondary m-0 mt-1">Real-time risk weighting combining ground inclination angle and soil moisture saturation.</p>
-</div>
-<div class="text-end">
-<span id="lri-value" class="fs-2 fw-bold text-info glow-cyan">12%</span>
-<span id="lri-status" class="badge bg-dark border border-info text-info rounded-pill ms-2">Low Risk Level</span>
-</div>
-</div>
-<div class="progress bg-dark border border-secondary mt-2" style="height: 12px; border-radius: 6px;">
-<div id="lri-progress" class="progress-bar bg-info" role="progressbar" style="width: 12%;"></div>
-</div>
-</div>
-</div>
-</div>
+    <!-- ULTRA-FAST SLOPE VISUALIZER -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="glass-card px-4 py-3 text-center">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="text-info m-0"><i class="bi bi-box-seam me-2"></i>Live Slope Dynamic Displacement Visualizer</h6>
+                    <span class="badge bg-dark border border-secondary" id="tiltSpeedBadge">Delta: 0.00°/s</span>
+                </div>
+                <canvas id="slopeCanvas" width="900" height="110" class="w-100"></canvas>
+            </div>
+        </div>
+    </div>
 
-<!-- Slope Simulation Canvas -->
-<div class="row mb-4">
-<div class="col-12">
-<div class="glass-card px-4 py-3 text-center" id="slope-card">
-<div class="d-flex justify-content-between align-items-center mb-1">
-<h6 class="text-info m-0"><i class="bi bi-box-seam me-2"></i>Dynamic Slope Angle Model</h6>
-<span class="badge bg-dark border border-info text-info rounded-pill" style="font-size: 0.7rem;">Real-time Simulation</span>
-</div>
-<canvas id="slopeCanvas" width="800" height="90" class="w-100"></canvas>
-</div>
-</div>
-</div>
+    <!-- SENSOR GAUGES -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="glass-card p-4 text-center">
+                <h5 class="text-info"><i class="bi bi-compass me-2"></i>Ground Tilt Angle (MPU6050)</h5>
+                <div class="gauge-container"><div id="tilt_gauge"></div></div>
+                <span id="tilt-val" class="metric-value text-white">0.0°</span>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="glass-card p-4 text-center">
+                <h5 class="text-info"><i class="bi bi-droplet-half me-2"></i>Volumetric Soil Moisture (YL-69)</h5>
+                <div class="gauge-container"><div id="moisture_gauge"></div></div>
+                <span id="moisture-val" class="metric-value text-white">0.0%</span>
+            </div>
+        </div>
+    </div>
 
-<!-- Gauge Cards -->
-<div class="row g-4 mb-4">
-<div class="col-md-6">
-<div class="glass-card p-4 h-100 text-center" id="tilt-card">
-<div class="d-flex justify-content-between align-items-center mb-3">
-<h5 class="text-info m-0"><i class="bi bi-compass me-2"></i>Ground Tilt Angle</h5>
-<span class="badge bg-dark border border-info text-info rounded-pill">Threshold: 35°</span>
-</div>
-<div class="gauge-container"><div id="tilt_gauge"></div></div>
-<div class="mt-3">
-<span class="text-secondary">Current Angle:</span>
-<span id="tilt-val" class="metric-value text-white glow-cyan ms-2">0.0°</span>
-</div>
-</div>
-</div>
-
-<div class="col-md-6">
-<div class="glass-card p-4 h-100 text-center" id="moisture-card">
-<div class="d-flex justify-content-between align-items-center mb-3">
-<h5 class="text-info m-0"><i class="bi bi-droplet-half me-2"></i>Soil Moisture Saturation</h5>
-<span class="badge bg-dark border border-info text-info rounded-pill">Threshold: 70%</span>
-</div>
-<div class="gauge-container"><div id="moisture_gauge"></div></div>
-<div class="mt-3">
-<span class="text-secondary">Current Saturation:</span>
-<span id="moisture-val" class="metric-value text-white glow-green ms-2">0.0%</span>
-</div>
-<div class="mt-2">
-<small class="text-secondary">Saturation Trend: </small>
-<span id="moisture-trend" class="badge bg-dark border border-secondary text-secondary">Stable (0.0%/sync)</span>
-</div>
-</div>
-</div>
+    <!-- TELEMETRY CHART -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="glass-card p-4">
+                <h5 class="text-info mb-3"><i class="bi bi-graph-up-arrow me-2"></i>Continuous Telemetry History</h5>
+                <div style="height: 260px; width: 100%;">
+                    <canvas id="telemetryChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<!-- Telemetry Graph & Console -->
-<div class="row g-4 mb-4" id="telemetry-section">
-<div class="col-lg-8">
-<div class="glass-card p-4 h-100">
-<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-<h5 class="text-info m-0"><i class="bi bi-graph-up-arrow me-2"></i>Telemetry Analytics</h5>
-<div class="btn-group btn-group-sm">
-<button type="button" class="btn btn-outline-info active" onclick="updateChartRange(15)">Live (15 Pts)</button>
-<button type="button" class="btn btn-outline-info" onclick="updateChartRange(50)">50 Pts</button>
-<button type="button" class="btn btn-outline-info" onclick="updateChartRange(100)">100 Pts</button>
-</div>
-</div>
-<div style="position: relative; height: 260px; width: 100%;">
-<canvas id="telemetryChart"></canvas>
-</div>
-</div>
-</div>
-
-<div class="col-lg-4">
-<div class="glass-card p-4 h-100 d-flex flex-column justify-content-between">
-<h5 class="text-info mb-3"><i class="bi bi-terminal me-2"></i>Incident Log Console</h5>
-<div class="log-console mb-3" id="log-console">
-<div>[INIT] System initialized successfully.</div>
-</div>
-<button class="btn btn-outline-secondary btn-sm w-100 rounded-pill" onclick="clearConsole()">Clear Console</button>
-</div>
-</div>
-</div>
-
-</div>
-
-<!-- Modal Form -->
-<div class="modal fade" id="installationModal" tabindex="-1" aria-hidden="true">
-<div class="modal-dialog modal-dialog-centered modal-lg">
-<div class="modal-content">
-<div class="modal-header border-secondary">
-<h5 class="modal-title text-info"><i class="bi bi-geo-alt-fill me-2"></i>Request Node Installation</h5>
-<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-</div>
-<div class="modal-body p-4">
-<form id="installationForm" onsubmit="handleInstallationSubmit(event)">
-<div class="row g-3">
-<div class="col-md-6">
-<label class="form-label small text-secondary">Locality / Zone Name</label>
-<input type="text" class="form-control bg-dark text-light border-secondary" placeholder="e.g., Sector 4 Hillside" required>
-</div>
-<div class="col-md-6">
-<label class="form-label small text-secondary">Contact Person / Officer</label>
-<input type="text" class="form-control bg-dark text-light border-secondary" placeholder="Full Name" required>
-</div>
-<div class="col-md-6">
-<label class="form-label small text-secondary">Emergency Phone Number</label>
-<input type="tel" class="form-control bg-dark text-light border-secondary" placeholder="+91 XXXXX XXXXX" required>
-</div>
-<div class="col-md-6">
-<label class="form-label small text-secondary">Terrain Risk Profile</label>
-<select class="form-select bg-dark text-light border-secondary" required>
-<option value="" selected disabled>Select slope profile...</option>
-<option value="Steep Slope (>35°)">Steep Slope (>35°)</option>
-<option value="Moderate Slope (15°-35°)">Moderate Slope (15°-35°)</option>
-<option value="High Rainfall Zone">High Rainfall / Flood Zone</option>
-</select>
-</div>
-<div class="col-12">
-<label class="form-label small text-secondary">GPS Coordinates or Site Address</label>
-<textarea class="form-control bg-dark text-light border-secondary" rows="2" placeholder="Latitude, Longitude or detailed locality landmarks..." required></textarea>
-</div>
-<div class="col-12 text-end mt-4">
-<button type="button" class="btn btn-outline-secondary rounded-pill me-2" data-bs-dismiss="modal">Cancel</button>
-<button type="submit" class="btn btn-glass-info rounded-pill px-4">Submit Request</button>
-</div>
-</div>
-</form>
-</div>
-</div>
-</div>
+<!-- REQUEST NEW NODE MODAL -->
+<div class="modal fade" id="requestNodeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-light border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title fw-bold"><i class="bi bi-geo-alt-fill text-info me-2"></i>Request Node Deployment</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form onsubmit="submitNodeRequest(event)">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Requested Node ID / Sector</label>
+                        <input type="text" class="form-control bg-black text-light border-secondary" id="reqNodeId" placeholder="e.g. ESP32-SLOPE-SECTOR-4" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Terrain / Slope Location Notes</label>
+                        <textarea class="form-control bg-black text-light border-secondary" id="reqLocation" rows="2" placeholder="e.g. Ridge crest near drainage outflow" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Sensors Required</label>
+                        <select class="form-select bg-black text-light border-secondary" id="reqSensorPackage">
+                            <option value="Standard (MPU6050 + YL-69)">Standard (MPU6050 + YL-69)</option>
+                            <option value="Expanded (MPU6050 + YL-69 + Rain Gauge)">Expanded (MPU6050 + YL-69 + Rain Gauge)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-info fw-bold">Submit Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-// Explicitly load Google Gauge Package
-if (typeof google !== 'undefined') {
-google.charts.load('current', {'packages':['gauge']});
-google.charts.setOnLoadCallback(initDashboard);
-}
+    // --- INTEGRATION CREDENTIALS ---
+    // Reads configured credentials or falls back to system defaults
+    const TS_CHANNEL = localStorage.getItem('ts_channel') || '3474434';
+    const TS_READ_KEY = localStorage.getItem('ts_read_key') || 'HGQU6VE5X73Q0K8N';
+    
+    // Telegram Bot Integration Configuration
+    const TG_BOT_TOKEN = localStorage.getItem('tg_bot_token') || 'YOUR_TELEGRAM_BOT_TOKEN';
+    const TG_CHAT_ID = localStorage.getItem('tg_chat_id') || 'YOUR_TELEGRAM_CHAT_ID';
 
-let tiltGauge, moistureGauge, gaugeData, telemetryChart;
-let activeChannelId = '3474434';
-let READ_API_KEY = 'HGQU6VE5X73Q0K8N'; // Your Read API Key for private channel fetching
-let resultsCount = 15;
-let READ_API_URL = `https://api.thingspeak.com/channels/${activeChannelId}/feeds.json?api_key=${READ_API_KEY}&results=${resultsCount}`;
-let previousMoisture = null;
+    // Telemetry Engine State
+    let tiltGauge, moistureGauge, gaugeData, telemetryChart;
+    let targetTilt = 0, currentDisplayedTilt = 0;
+    let lastTiltTimestamp = Date.now();
+    let previousTiltReading = 0;
+    let lastTelegramAlertTime = 0; // Cooldown tracker (milliseconds)
 
-function logEvent(msg) {
-const consoleEl = document.getElementById('log-console');
-if (consoleEl) {
-const time = new Date().toLocaleTimeString();
-consoleEl.innerHTML += `<div>[${time}] ${msg}</div>`;
-consoleEl.scrollTop = consoleEl.scrollHeight;
-}
-}
+    // Load Google Charts Gauge Engine
+    if (typeof google !== 'undefined') {
+        google.charts.load('current', {'packages':['gauge']});
+        google.charts.setOnLoadCallback(initDashboard);
+    }
 
-function clearConsole() {
-document.getElementById('log-console').innerHTML = '<div>[CONSOLE CLEARED]</div>';
-}
+    function initDashboard() {
+        // Individualized Gauge DataTable Setup
+        gaugeData = new google.visualization.DataTable();
+        gaugeData.addColumn('string', 'Label');
+        gaugeData.addColumn('number', 'Value');
+        gaugeData.addRows([['Slope (°)', 0], ['Moisture (%)', 0]]);
 
-function enterDashboard() {
-document.getElementById('home-screen').classList.add('hidden');
-logEvent('User entered main telemetry screen.');
-}
+        tiltGauge = new google.visualization.Gauge(document.getElementById('tilt_gauge'));
+        moistureGauge = new google.visualization.Gauge(document.getElementById('moisture_gauge'));
 
-function switchNode(nodeId) {
-activeChannelId = nodeId;
-previousMoisture = null;
-const nodeBadge = document.getElementById('active-node-badge');
-logEvent(`Switched active node view to: ${nodeId}`);
+        initChart();
+        animateSlopeEngine(); 
+        
+        // Fast-Polling Telemetry Cycle (every 4 seconds for immediate updates)
+        fetchFastTelemetry();
+        setInterval(fetchFastTelemetry, 4000); 
+    }
 
-if (nodeId === 'DEMO_BETA') {
-nodeBadge.innerText = 'ESP32 Node: Beta-2';
-updateDashboardWithValues(12.4, 45.0);
-} else if (nodeId === 'DEMO_GAMMA') {
-nodeBadge.innerText = 'ESP32 Node: Gamma-3';
-updateDashboardWithValues(38.2, 78.5);
-} else {
-nodeBadge.innerText = 'ESP32 Node: Alpha-1';
-READ_API_URL = `https://api.thingspeak.com/channels/${activeChannelId}/feeds.json?api_key=${READ_API_KEY}&results=${resultsCount}`;
-fetchTelemetryData();
-}
-}
+    // --- HIGH-SPEED CANVAS SLOPE DETECTOR ---
+    function animateSlopeEngine() {
+        // EMA lerp coefficient: 0.12 ensures high responsiveness while eliminating micro-jitter
+        currentDisplayedTilt += (targetTilt - currentDisplayedTilt) * 0.12;
+        drawSlope(currentDisplayedTilt);
+        requestAnimationFrame(animateSlopeEngine);
+    }
 
-function initDashboard() {
-gaugeData = new google.visualization.DataTable();
-gaugeData.addColumn('string', 'Label');
-gaugeData.addColumn('number', 'Value');
-gaugeData.addRows([['Tilt (°)', 0], ['Moisture (%)', 0]]);
+    function drawSlope(angleDeg) {
+        const canvas = document.getElementById('slopeCanvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width, h = canvas.height;
 
-const tiltElem = document.getElementById('tilt_gauge');
-const moistureElem = document.getElementById('moisture_gauge');
+        ctx.clearRect(0, 0, w, h);
+        ctx.save();
+        ctx.translate(w / 2, h / 2 + 15);
+        ctx.rotate((-angleDeg * Math.PI) / 180);
 
-if (tiltElem && moistureElem) {
-tiltGauge = new google.visualization.Gauge(tiltElem);
-moistureGauge = new google.visualization.Gauge(moistureElem);
-}
+        // Dynamic State Chromatic Coding
+        let color = '#38bdf8';
+        if (angleDeg >= 30) color = '#ef4444';
+        else if (angleDeg >= 15) color = '#f59e0b';
 
-initChart();
-drawSlopeVisualizer(0);
-fetchTelemetryData();
-setInterval(fetchTelemetryData, 3000); // 3s fast refresh
-}
+        // Hillside Profile
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(-420, 10);
+        ctx.lineTo(420, -10);
+        ctx.lineTo(420, 45);
+        ctx.lineTo(-420, 45);
+        ctx.closePath();
+        ctx.fill();
 
-function calculateLRI(tilt, moisture) {
-const tiltFactor = Math.min(tilt / 90, 1) * 0.6;
-const moistureFactor = Math.min(moisture / 100, 1) * 0.4;
-const lriScore = Math.round((tiltFactor + moistureFactor) * 100);
+        // Structural Observation Outpost / Beacon
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(-18, -18, 36, 18);
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(0, -9, 4, 0, Math.PI * 2);
+        ctx.fill();
 
-const lriVal = document.getElementById('lri-value');
-const lriStatus = document.getElementById('lri-status');
-const lriProgress = document.getElementById('lri-progress');
+        ctx.restore();
+    }
 
-if (lriVal && lriStatus && lriProgress) {
-lriVal.innerText = `${lriScore}%`;
-lriProgress.style.width = `${lriScore}%`;
+    // --- CHART.JS CONFIGURATION (HIGH-CONTRAST DARK MODE) ---
+    function initChart() {
+        const ctx = document.getElementById('telemetryChart').getContext('2d');
+        telemetryChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'Slope Angle (°)',
+                        data: [],
+                        borderColor: '#38bdf8',
+                        backgroundColor: 'rgba(56, 189, 248, 0.12)',
+                        borderWidth: 2,
+                        tension: 0.35,
+                        fill: true
+                    },
+                    {
+                        label: 'Moisture (%)',
+                        data: [],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                        borderWidth: 2,
+                        tension: 0.35,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        ticks: { color: '#94a3b8' },
+                        grid: { color: 'rgba(255, 255, 255, 0.06)' }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        max: 90,
+                        ticks: { color: '#94a3b8' },
+                        grid: { color: 'rgba(255, 255, 255, 0.06)' }
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: '#f8fafc', font: { family: 'Poppins' } } }
+                }
+            }
+        });
+    }
 
-if (lriScore >= 60) {
-lriVal.className = 'fs-2 fw-bold text-danger glow-cyan';
-lriStatus.innerText = 'CRITICAL LANDSLIDE RISK';
-lriStatus.className = 'badge bg-dark border border-danger text-danger rounded-pill ms-2';
-lriProgress.className = 'progress-bar bg-danger';
-} else if (lriScore >= 35) {
-lriVal.className = 'fs-2 fw-bold text-warning glow-cyan';
-lriStatus.innerText = 'ELEVATED RISK LEVEL';
-lriStatus.className = 'badge bg-dark border border-warning text-warning rounded-pill ms-2';
-lriProgress.className = 'progress-bar bg-warning';
-} else {
-lriVal.className = 'fs-2 fw-bold text-info glow-cyan';
-lriStatus.innerText = 'LOW RISK LEVEL';
-lriStatus.className = 'badge bg-dark border border-info text-info rounded-pill ms-2';
-lriProgress.className = 'progress-bar bg-info';
-}
-}
-}
+    // --- LIVE TELEMETRY & DISPATCH ENGINE ---
+    async function fetchFastTelemetry() {
+        const syncText = document.getElementById('syncText');
+        const pulseDot = document.getElementById('pulseDot');
 
-function drawSlopeVisualizer(angleDeg) {
-const canvas = document.getElementById('slopeCanvas');
-if (!canvas) return;
-const ctx = canvas.getContext('2d');
-const w = canvas.width;
-const h = canvas.height;
+        try {
+            const url = `https://api.thingspeak.com/channels/${TS_CHANNEL}/feeds.json?api_key=${TS_READ_KEY}&results=15`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Gateway rejected credentials');
+            
+            const data = await response.json();
+            const feeds = data.feeds;
 
-ctx.clearRect(0, 0, w, h);
-ctx.save();
-ctx.translate(w / 2, h / 2 + 10);
-ctx.rotate((-angleDeg * Math.PI) / 180);
+            if (feeds && feeds.length > 0) {
+                const latest = feeds[feeds.length - 1];
+                const tilt = parseFloat(latest.field1) || 0;
+                const moisture = parseFloat(latest.field2) || 0;
 
-ctx.fillStyle = angleDeg >= 35 ? '#ef4444' : (angleDeg >= 15 ? '#f59e0b' : '#38bdf8');
-ctx.beginPath();
-ctx.moveTo(-220, 10);
-ctx.lineTo(220, -10);
-ctx.lineTo(220, 30);
-ctx.lineTo(-220, 30);
-ctx.closePath();
-ctx.fill();
+                // Rate-of-Displacement Calculation
+                const now = Date.now();
+                const deltaSeconds = (now - lastTiltTimestamp) / 1000;
+                if (deltaSeconds > 0) {
+                    const rate = Math.abs((tilt - previousTiltReading) / deltaSeconds);
+                    document.getElementById('tiltSpeedBadge').innerText = `Delta: ${rate.toFixed(2)}°/s`;
+                }
+                previousTiltReading = tilt;
+                lastTiltTimestamp = now;
+                targetTilt = tilt;
 
-ctx.fillStyle = '#f8fafc';
-ctx.fillRect(-15, -15, 30, 15);
+                // Sync Google Gauges
+                gaugeData.setValue(0, 1, tilt);
+                gaugeData.setValue(1, 1, moisture);
+                
+                const tiltView = new google.visualization.DataView(gaugeData);
+                tiltView.setRows([0]);
+                tiltGauge.draw(tiltView, { width: 180, height: 180, max: 90, yellowFrom: 15, yellowTo: 30, redFrom: 30, redTo: 90 });
 
-ctx.restore();
-}
+                const moistureView = new google.visualization.DataView(gaugeData);
+                moistureView.setRows([1]);
+                moistureGauge.draw(moistureView, { width: 180, height: 180, max: 100, yellowFrom: 50, yellowTo: 70, redFrom: 70, redTo: 100 });
 
-function initChart() {
-const chartElem = document.getElementById('telemetryChart');
-if (!chartElem) return;
+                document.getElementById('tilt-val').innerText = `${tilt.toFixed(1)}°`;
+                document.getElementById('moisture-val').innerText = `${moisture.toFixed(1)}%`;
 
-const ctx = chartElem.getContext('2d');
-telemetryChart = new Chart(ctx, {
-type: 'line',
-data: {
-labels: [],
-datasets: [
-{ label: 'Tilt Angle (°)', data: [], borderColor: '#38bdf8', borderWidth: 3, fill: false, tension: 0.3 },
-{ label: 'Soil Moisture (%)', data: [], borderColor: '#10b981', borderWidth: 3, fill: false, tension: 0.3 }
-]
-},
-options: {
-responsive: true,
-maintainAspectRatio: false,
-scales: {
-x: { ticks: { color: '#94a3b8' } },
-y: { ticks: { color: '#94a3b8' }, beginAtZero: true, max: 100 }
-}
-}
-});
-}
+                // Landslide Risk Index (LRI) Formula: (60% Tilt Weight + 40% Moisture Weight)
+                const lri = Math.min(Math.round((tilt / 60) * 60 + (moisture / 100) * 40), 100);
+                document.getElementById('lri-value').innerText = `${lri}%`;
 
-function updateDashboardWithValues(latestTilt, latestMoisture) {
-if (gaugeData && tiltGauge && moistureGauge) {
-gaugeData.setValue(0, 1, latestTilt);
-gaugeData.setValue(1, 1, latestMoisture);
-tiltGauge.draw(gaugeData, { width: 180, height: 180, max: 90 });
-moistureGauge.draw(gaugeData, { width: 180, height: 180, max: 100 });
-}
+                const progressBar = document.getElementById('lri-progress');
+                progressBar.style.width = `${lri}%`;
+                progressBar.className = lri >= 75 ? 'progress-bar bg-danger' : (lri >= 50 ? 'progress-bar bg-warning' : 'progress-bar bg-info');
 
-document.getElementById('tilt-val').innerText = latestTilt.toFixed(1) + '°';
-document.getElementById('moisture-val').innerText = latestMoisture.toFixed(1) + '%';
+                // Dynamic System Threat Analysis
+                runDynamicAnalysis(tilt, moisture, lri);
 
-const trendBadge = document.getElementById('moisture-trend');
-if (trendBadge && previousMoisture !== null) {
-const diff = latestMoisture - previousMoisture;
-if (diff > 5) {
-trendBadge.innerText = `⚠️ Rapid Rise (+${diff.toFixed(1)}%)`;
-trendBadge.className = 'badge bg-dark border border-danger text-danger';
-logEvent(`⚠️ RAPID SATURATION WARNING: Soil moisture increased by +${diff.toFixed(1)}% in last sync!`);
-} else if (diff > 0) {
-trendBadge.innerText = `📈 Slow Rise (+${diff.toFixed(1)}%)`;
-trendBadge.className = 'badge bg-dark border border-warning text-warning';
-} else if (diff < 0) {
-trendBadge.innerText = `📉 Drying (${diff.toFixed(1)}%)`;
-trendBadge.className = 'badge bg-dark border border-info text-info';
-} else {
-trendBadge.innerText = `Stable (0.0%)`;
-trendBadge.className = 'badge bg-dark border border-secondary text-secondary';
-}
-}
-previousMoisture = latestMoisture;
+                // Chart Synchronization
+                if (telemetryChart) {
+                    telemetryChart.data.labels = feeds.map(f => new Date(f.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+                    telemetryChart.data.datasets[0].data = feeds.map(f => parseFloat(f.field1) || 0);
+                    telemetryChart.data.datasets[1].data = feeds.map(f => parseFloat(f.field2) || 0);
+                    telemetryChart.update();
+                }
 
-drawSlopeVisualizer(latestTilt);
-calculateLRI(latestTilt, latestMoisture);
-}
+                syncText.innerText = "Live Sync Active";
+                pulseDot.style.backgroundColor = "#10b981";
+                pulseDot.style.boxShadow = "0 0 10px #10b981";
+                document.getElementById('lastUpdated').innerText = `Last sync: ${new Date().toLocaleTimeString()}`;
+            }
+        } catch (err) {
+            syncText.innerText = "Sync Failed / Offline";
+            pulseDot.style.backgroundColor = "#ef4444";
+            pulseDot.style.boxShadow = "0 0 10px #ef4444";
+        }
+    }
 
-async function fetchTelemetryData() {
-if (activeChannelId.startsWith('DEMO')) return;
+    // --- SYSTEM ANALYSIS & TELEGRAM ALERT DISPATCH ---
+    function runDynamicAnalysis(tilt, moisture, lri) {
+        const panel = document.getElementById('analysis-panel');
+        const text = document.getElementById('analysis-text');
 
-try {
-const response = await fetch(READ_API_URL);
-const data = await response.json();
-const feeds = data.feeds;
+        let message = "";
+        let alertLevel = "NORMAL";
 
-if (feeds && feeds.length > 0) {
-const latestFeed = feeds[feeds.length - 1];
-const latestTilt = parseFloat(latestFeed.field1) || 0;
-const latestMoisture = parseFloat(latestFeed.field2) || 0;
+        if (lri >= 75 || tilt >= 30) {
+            alertLevel = "CRITICAL";
+            panel.style.borderLeftColor = "#ef4444";
+            message = `CRITICAL THREAT: MPU6050 detected acute slope displacement (${tilt.toFixed(1)}°) with high soil saturation (${moisture.toFixed(1)}%). Shear strength breached. Immediate evacuation recommended.`;
+            dispatchTelegramAlert(`🚨 *TERRAWATCH CRITICAL ALERT*\n\n*LRI:* ${lri}%\n*Slope:* ${tilt.toFixed(1)}°\n*Moisture:* ${moisture.toFixed(1)}%\n*Status:* Critical terrain movement detected. Immediate action required.`);
+        } else if (lri >= 50 || moisture >= 70) {
+            alertLevel = "WARNING";
+            panel.style.borderLeftColor = "#f59e0b";
+            message = `ELEVATED RISK: Elevated saturation (${moisture.toFixed(1)}%) is decreasing internal soil friction. Ground inclination is currently ${tilt.toFixed(1)}°. Continued rain will trigger structural instability.`;
+            dispatchTelegramAlert(`⚠️ *TERRAWATCH ELEVATED WARNING*\n\n*LRI:* ${lri}%\n*Slope:* ${tilt.toFixed(1)}°\n*Moisture:* ${moisture.toFixed(1)}%\n*Status:* High water saturation detected.`);
+        } else {
+            panel.style.borderLeftColor = "#38bdf8";
+            message = `NORMAL OPERATIONAL STATE: Soil stability within nominal safety envelope. Slope at ${tilt.toFixed(1)}° and moisture at ${moisture.toFixed(1)}%. Shear resistance stable.`;
+        }
 
-updateDashboardWithValues(latestTilt, latestMoisture);
-logEvent(`Telemetry sync: Tilt=${latestTilt.toFixed(1)}°, Moisture=${latestMoisture.toFixed(1)}%`);
+        text.innerText = message;
+    }
 
-if (telemetryChart) {
-const labels = feeds.map(f => new Date(f.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-telemetryChart.data.labels = labels;
-telemetryChart.data.datasets[0].data = feeds.map(f => parseFloat(f.field1) || 0);
-telemetryChart.data.datasets[1].data = feeds.map(f => parseFloat(f.field2) || 0);
-telemetryChart.update();
-}
-}
-} catch (err) {
-logEvent('Telemetry fetch error. Using cached stream.');
-}
-}
+    async function dispatchTelegramAlert(text) {
+        if (!TG_BOT_TOKEN || TG_BOT_TOKEN === 'YOUR_TELEGRAM_BOT_TOKEN') return;
+        
+        // 5-Minute Alert Throttle Cooldown
+        const now = Date.now();
+        if (now - lastTelegramAlertTime < 300000) return;
 
-function handleInstallationSubmit(event) {
-event.preventDefault();
-const form = event.target;
+        try {
+            await fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: TG_CHAT_ID,
+                    text: text,
+                    parse_mode: 'Markdown'
+                })
+            });
+            lastTelegramAlertTime = now;
+        } catch (e) {
+            console.error('Telegram dispatch failed:', e);
+        }
+    }
 
-const newRequest = {
-id: 'REQ-' + Date.now().toString().slice(-4),
-locality: form[0].value,
-officer: form[1].value,
-phone: form[2].value,
-profile: form[3].value,
-coords: form[4].value,
-timestamp: new Date().toLocaleString()
-};
+    // --- NODE REQUEST PROVISIONING ---
+    function submitNodeRequest(e) {
+        e.preventDefault();
+        const id = document.getElementById('reqNodeId').value.trim();
+        const location = document.getElementById('reqLocation').value.trim();
+        const sensors = document.getElementById('reqSensorPackage').value;
 
-const existingRequests = JSON.parse(localStorage.getItem('terra_installations') || '[]');
-existingRequests.unshift(newRequest);
-localStorage.setItem('terra_installations', JSON.stringify(existingRequests));
+        const rawNodes = localStorage.getItem('tw_registered_nodes');
+        const nodes = rawNodes ? JSON.parse(rawNodes) : [];
 
-logEvent(`Installation request logged for: ${newRequest.locality}`);
-alert(`Installation request for "${newRequest.locality}" saved successfully!`);
+        nodes.push({
+            id: id,
+            sensors: `${sensors} - Loc: ${location}`,
+            interval: 15,
+            status: "Pending Approval"
+        });
 
-form.reset();
-const modalEl = document.getElementById('installationModal');
-bootstrap.Modal.getInstance(modalEl).hide();
-}
+        localStorage.setItem('tw_registered_nodes', JSON.stringify(nodes));
 
-function updateChartRange(points) {
-resultsCount = points;
-READ_API_URL = `https://api.thingspeak.com/channels/${activeChannelId}/feeds.json?api_key=${READ_API_KEY}&results=${resultsCount}`;
-fetchTelemetryData();
-}
+        const modal = bootstrap.Modal.getInstance(document.getElementById('requestNodeModal'));
+        modal.hide();
+        e.target.reset();
+        alert(`Request for ${id} submitted! It will appear under Admin Gateway for approval.`);
+    }
 
-async function downloadCSV() {
-try {
-const response = await fetch(`https://api.thingspeak.com/channels/${activeChannelId}/feeds.json?api_key=${READ_API_KEY}&days=7`);
-const data = await response.json();
-const feeds = data.feeds;
-
-if (!feeds || feeds.length === 0) {
-alert('No telemetry data available for CSV export.');
-return;
-}
-
-let csvContent = 'data:text/csv;charset=utf-8,Entry ID,Timestamp,Tilt Angle (deg),Soil Moisture (%)\n';
-feeds.forEach(feed => {
-csvContent += `"${feed.entry_id}","${new Date(feed.created_at).toLocaleString()}",${feed.field1 || 0},${feed.field2 || 0}\n`;
-});
-
-const encodedUri = encodeURI(csvContent);
-const link = document.createElement('a');
-link.setAttribute('href', encodedUri);
-link.setAttribute('download', `TerraWatch_Telemetry_${new Date().toISOString().slice(0,10)}.csv`);
-document.body.appendChild(link);
-link.click();
-document.body.removeChild(link);
-} catch (err) {
-console.error('CSV Export Error:', err);
-}
-}
-
-function exportPDF() {
-const element = document.getElementById('report-content');
-const opt = {
-margin: 0.3,
-filename: `TerraWatch_Report_${new Date().toISOString().slice(0,10)}.pdf`,
-image: { type: 'jpeg', quality: 0.98 },
-html2canvas: { scale: 2 },
-jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-};
-html2pdf().set(opt).from(element).save();
-}
-
-if ('serviceWorker' in navigator) {
-window.addEventListener('load', () => {
-navigator.serviceWorker.register('./sw.js')
-.then(reg => logEvent('PWA Service Worker registered successfully.'))
-.catch(err => console.log('Service Worker registration failed:', err));
-});
-}
+    // --- PDF REPORT EXPORT ---
+    function exportPDFReport() {
+        const element = document.getElementById('dashboardReportContent');
+        const opt = {
+            margin:       0.3,
+            filename:     `TerraWatch_Audit_${Date.now()}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, backgroundColor: '#090d16' },
+            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+        html2pdf().set(opt).from(element).save();
+    }
 </script>
 </body>
 </html>
