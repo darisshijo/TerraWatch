@@ -90,10 +90,10 @@
     </div>
 </nav>
 
-<!-- MAIN CONTENT CONTAINER (PDF TARGET) -->
+<!-- MAIN CONTENT CONTAINER -->
 <div class="container" id="dashboardReportContent">
 
-    <!-- LRI THREAT ASSESSMENT -->
+    <!-- LRI ASSESSMENT -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="glass-card p-4">
@@ -102,7 +102,7 @@
                     <span id="lri-value" class="fs-2 fw-bold text-info">0%</span>
                 </div>
                 <div class="progress bg-dark border border-secondary" style="height: 14px; border-radius: 7px;">
-                    <div id="lri-progress" class="progress-bar bg-info" style="width: 0%; transition: width 0.6s ease-out;"></div>
+                    <div id="lri-progress" class="progress-bar bg-info" style="width: 0%; transition: width 0.3s ease-out;"></div>
                 </div>
                 
                 <div id="analysis-panel" class="analysis-box mt-4">
@@ -116,7 +116,7 @@
         </div>
     </div>
 
-    <!-- ULTRA-FAST SLOPE VISUALIZER -->
+    <!-- LIVE HIGH-SPEED SLOPE CANVAS -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="glass-card px-4 py-3 text-center">
@@ -133,14 +133,14 @@
     <div class="row g-4 mb-4">
         <div class="col-md-6">
             <div class="glass-card p-4 text-center">
-                <h5 class="text-info"><i class="bi bi-compass me-2"></i>Ground Tilt Angle (MPU6050)</h5>
+                <h5 class="text-info"><i class="bi bi-compass me-2"></i>Ground Tilt Angle</h5>
                 <div class="gauge-container"><div id="tilt_gauge"></div></div>
                 <span id="tilt-val" class="metric-value text-white">0.0°</span>
             </div>
         </div>
         <div class="col-md-6">
             <div class="glass-card p-4 text-center">
-                <h5 class="text-info"><i class="bi bi-droplet-half me-2"></i>Volumetric Soil Moisture (YL-69)</h5>
+                <h5 class="text-info"><i class="bi bi-droplet-half me-2"></i>Volumetric Soil Moisture</h5>
                 <div class="gauge-container"><div id="moisture_gauge"></div></div>
                 <span id="moisture-val" class="metric-value text-white">0.0%</span>
             </div>
@@ -160,7 +160,7 @@
     </div>
 </div>
 
-<!-- REQUEST NEW NODE MODAL -->
+<!-- REQUEST NODE MODAL -->
 <div class="modal fade" id="requestNodeModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content bg-dark text-light border-secondary">
@@ -175,8 +175,8 @@
                         <input type="text" class="form-control bg-black text-light border-secondary" id="reqNodeId" placeholder="e.g. ESP32-SLOPE-SECTOR-4" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Terrain / Slope Location Notes</label>
-                        <textarea class="form-control bg-black text-light border-secondary" id="reqLocation" rows="2" placeholder="e.g. Ridge crest near drainage outflow" required></textarea>
+                        <label class="form-label">Terrain Location Notes</label>
+                        <textarea class="form-control bg-black text-light border-secondary" id="reqLocation" rows="2" placeholder="e.g. Near steep drainage boundary" required></textarea>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Sensors Required</label>
@@ -198,30 +198,23 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    // --- INTEGRATION CREDENTIALS ---
-    // Reads configured credentials or falls back to system defaults
     const TS_CHANNEL = localStorage.getItem('ts_channel') || '3474434';
     const TS_READ_KEY = localStorage.getItem('ts_read_key') || 'HGQU6VE5X73Q0K8N';
-    
-    // Telegram Bot Integration Configuration
-    const TG_BOT_TOKEN = localStorage.getItem('tg_bot_token') || 'YOUR_TELEGRAM_BOT_TOKEN';
-    const TG_CHAT_ID = localStorage.getItem('tg_chat_id') || 'YOUR_TELEGRAM_CHAT_ID';
+    const TG_BOT_TOKEN = localStorage.getItem('tg_bot_token') || '';
+    const TG_CHAT_ID = localStorage.getItem('tg_chat_id') || '';
 
-    // Telemetry Engine State
     let tiltGauge, moistureGauge, gaugeData, telemetryChart;
     let targetTilt = 0, currentDisplayedTilt = 0;
     let lastTiltTimestamp = Date.now();
     let previousTiltReading = 0;
-    let lastTelegramAlertTime = 0; // Cooldown tracker (milliseconds)
+    let lastTelegramAlertTime = 0;
 
-    // Load Google Charts Gauge Engine
     if (typeof google !== 'undefined') {
         google.charts.load('current', {'packages':['gauge']});
         google.charts.setOnLoadCallback(initDashboard);
     }
 
     function initDashboard() {
-        // Individualized Gauge DataTable Setup
         gaugeData = new google.visualization.DataTable();
         gaugeData.addColumn('string', 'Label');
         gaugeData.addColumn('number', 'Value');
@@ -233,15 +226,12 @@
         initChart();
         animateSlopeEngine(); 
         
-        // Fast-Polling Telemetry Cycle (every 4 seconds for immediate updates)
         fetchFastTelemetry();
-        setInterval(fetchFastTelemetry, 4000); 
+        setInterval(fetchFastTelemetry, 3000); 
     }
 
-    // --- HIGH-SPEED CANVAS SLOPE DETECTOR ---
     function animateSlopeEngine() {
-        // EMA lerp coefficient: 0.12 ensures high responsiveness while eliminating micro-jitter
-        currentDisplayedTilt += (targetTilt - currentDisplayedTilt) * 0.12;
+        currentDisplayedTilt += (targetTilt - currentDisplayedTilt) * 0.35;
         drawSlope(currentDisplayedTilt);
         requestAnimationFrame(animateSlopeEngine);
     }
@@ -257,12 +247,10 @@
         ctx.translate(w / 2, h / 2 + 15);
         ctx.rotate((-angleDeg * Math.PI) / 180);
 
-        // Dynamic State Chromatic Coding
         let color = '#38bdf8';
         if (angleDeg >= 30) color = '#ef4444';
         else if (angleDeg >= 15) color = '#f59e0b';
 
-        // Hillside Profile
         ctx.fillStyle = color;
         ctx.beginPath();
         ctx.moveTo(-420, 10);
@@ -272,7 +260,6 @@
         ctx.closePath();
         ctx.fill();
 
-        // Structural Observation Outpost / Beacon
         ctx.fillStyle = '#f8fafc';
         ctx.fillRect(-18, -18, 36, 18);
         ctx.fillStyle = color;
@@ -283,7 +270,6 @@
         ctx.restore();
     }
 
-    // --- CHART.JS CONFIGURATION (HIGH-CONTRAST DARK MODE) ---
     function initChart() {
         const ctx = document.getElementById('telemetryChart').getContext('2d');
         telemetryChart = new Chart(ctx, {
@@ -297,7 +283,7 @@
                         borderColor: '#38bdf8',
                         backgroundColor: 'rgba(56, 189, 248, 0.12)',
                         borderWidth: 2,
-                        tension: 0.35,
+                        tension: 0.3,
                         fill: true
                     },
                     {
@@ -306,7 +292,7 @@
                         borderColor: '#10b981',
                         backgroundColor: 'rgba(16, 185, 129, 0.12)',
                         borderWidth: 2,
-                        tension: 0.35,
+                        tension: 0.3,
                         fill: true
                     }
                 ]
@@ -315,33 +301,22 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
-                    x: {
-                        ticks: { color: '#94a3b8' },
-                        grid: { color: 'rgba(255, 255, 255, 0.06)' }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        max: 90,
-                        ticks: { color: '#94a3b8' },
-                        grid: { color: 'rgba(255, 255, 255, 0.06)' }
-                    }
+                    x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255, 255, 255, 0.06)' } },
+                    y: { beginAtZero: true, max: 100, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255, 255, 255, 0.06)' } }
                 },
-                plugins: {
-                    legend: { labels: { color: '#f8fafc', font: { family: 'Poppins' } } }
-                }
+                plugins: { legend: { labels: { color: '#f8fafc' } } }
             }
         });
     }
 
-    // --- LIVE TELEMETRY & DISPATCH ENGINE ---
     async function fetchFastTelemetry() {
         const syncText = document.getElementById('syncText');
         const pulseDot = document.getElementById('pulseDot');
 
         try {
-            const url = `https://api.thingspeak.com/channels/${TS_CHANNEL}/feeds.json?api_key=${TS_READ_KEY}&results=15`;
+            const url = `https://api.thingspeak.com/channels/${TS_CHANNEL}/feeds.json?api_key=${TS_READ_KEY}&results=10`;
             const response = await fetch(url);
-            if (!response.ok) throw new Error('Gateway rejected credentials');
+            if (!response.ok) throw new Error('Bad Feed Connection');
             
             const data = await response.json();
             const feeds = data.feeds;
@@ -349,9 +324,12 @@
             if (feeds && feeds.length > 0) {
                 const latest = feeds[feeds.length - 1];
                 const tilt = parseFloat(latest.field1) || 0;
-                const moisture = parseFloat(latest.field2) || 0;
+                
+                // INVERTED MOISTURE CALCULATION:
+                // When water touches sensor, reading goes HIGH (up to 100%)
+                const rawMoisture = parseFloat(latest.field2) || 0;
+                const moisture = Math.max(0, Math.min(100, 100 - rawMoisture));
 
-                // Rate-of-Displacement Calculation
                 const now = Date.now();
                 const deltaSeconds = (now - lastTiltTimestamp) / 1000;
                 if (deltaSeconds > 0) {
@@ -362,7 +340,6 @@
                 lastTiltTimestamp = now;
                 targetTilt = tilt;
 
-                // Sync Google Gauges
                 gaugeData.setValue(0, 1, tilt);
                 gaugeData.setValue(1, 1, moisture);
                 
@@ -377,7 +354,6 @@
                 document.getElementById('tilt-val').innerText = `${tilt.toFixed(1)}°`;
                 document.getElementById('moisture-val').innerText = `${moisture.toFixed(1)}%`;
 
-                // Landslide Risk Index (LRI) Formula: (60% Tilt Weight + 40% Moisture Weight)
                 const lri = Math.min(Math.round((tilt / 60) * 60 + (moisture / 100) * 40), 100);
                 document.getElementById('lri-value').innerText = `${lri}%`;
 
@@ -385,14 +361,13 @@
                 progressBar.style.width = `${lri}%`;
                 progressBar.className = lri >= 75 ? 'progress-bar bg-danger' : (lri >= 50 ? 'progress-bar bg-warning' : 'progress-bar bg-info');
 
-                // Dynamic System Threat Analysis
                 runDynamicAnalysis(tilt, moisture, lri);
 
-                // Chart Synchronization
                 if (telemetryChart) {
                     telemetryChart.data.labels = feeds.map(f => new Date(f.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
                     telemetryChart.data.datasets[0].data = feeds.map(f => parseFloat(f.field1) || 0);
-                    telemetryChart.data.datasets[1].data = feeds.map(f => parseFloat(f.field2) || 0);
+                    // Map the chart history to use the inverted values too
+                    telemetryChart.data.datasets[1].data = feeds.map(f => Math.max(0, Math.min(100, 100 - (parseFloat(f.field2) || 0))));
                     telemetryChart.update();
                 }
 
@@ -408,36 +383,28 @@
         }
     }
 
-    // --- SYSTEM ANALYSIS & TELEGRAM ALERT DISPATCH ---
     function runDynamicAnalysis(tilt, moisture, lri) {
         const panel = document.getElementById('analysis-panel');
         const text = document.getElementById('analysis-text');
 
         let message = "";
-        let alertLevel = "NORMAL";
-
         if (lri >= 75 || tilt >= 30) {
-            alertLevel = "CRITICAL";
             panel.style.borderLeftColor = "#ef4444";
-            message = `CRITICAL THREAT: MPU6050 detected acute slope displacement (${tilt.toFixed(1)}°) with high soil saturation (${moisture.toFixed(1)}%). Shear strength breached. Immediate evacuation recommended.`;
-            dispatchTelegramAlert(`🚨 *TERRAWATCH CRITICAL ALERT*\n\n*LRI:* ${lri}%\n*Slope:* ${tilt.toFixed(1)}°\n*Moisture:* ${moisture.toFixed(1)}%\n*Status:* Critical terrain movement detected. Immediate action required.`);
+            message = `CRITICAL THREAT: Acute slope displacement (${tilt.toFixed(1)}°) with high saturation (${moisture.toFixed(1)}%). Immediate structural risk.`;
+            dispatchTelegramAlert(`🚨 *TERRAWATCH CRITICAL ALERT*\n\n*LRI:* ${lri}%\n*Slope:* ${tilt.toFixed(1)}°\n*Moisture:* ${moisture.toFixed(1)}%`);
         } else if (lri >= 50 || moisture >= 70) {
-            alertLevel = "WARNING";
             panel.style.borderLeftColor = "#f59e0b";
-            message = `ELEVATED RISK: Elevated saturation (${moisture.toFixed(1)}%) is decreasing internal soil friction. Ground inclination is currently ${tilt.toFixed(1)}°. Continued rain will trigger structural instability.`;
-            dispatchTelegramAlert(`⚠️ *TERRAWATCH ELEVATED WARNING*\n\n*LRI:* ${lri}%\n*Slope:* ${tilt.toFixed(1)}°\n*Moisture:* ${moisture.toFixed(1)}%\n*Status:* High water saturation detected.`);
+            message = `ELEVATED RISK: High saturation (${moisture.toFixed(1)}%). Slope currently at ${tilt.toFixed(1)}°. Continuous monitoring advised.`;
+            dispatchTelegramAlert(`⚠️ *TERRAWATCH WARNING*\n\n*LRI:* ${lri}%\n*Slope:* ${tilt.toFixed(1)}°\n*Moisture:* ${moisture.toFixed(1)}%`);
         } else {
             panel.style.borderLeftColor = "#38bdf8";
-            message = `NORMAL OPERATIONAL STATE: Soil stability within nominal safety envelope. Slope at ${tilt.toFixed(1)}° and moisture at ${moisture.toFixed(1)}%. Shear resistance stable.`;
+            message = `NORMAL OPERATIONS: Nominal status. Slope at ${tilt.toFixed(1)}° and moisture at ${moisture.toFixed(1)}%. Soil equilibrium stable.`;
         }
-
         text.innerText = message;
     }
 
     async function dispatchTelegramAlert(text) {
-        if (!TG_BOT_TOKEN || TG_BOT_TOKEN === 'YOUR_TELEGRAM_BOT_TOKEN') return;
-        
-        // 5-Minute Alert Throttle Cooldown
+        if (!TG_BOT_TOKEN || TG_BOT_TOKEN.length < 10) return;
         const now = Date.now();
         if (now - lastTelegramAlertTime < 300000) return;
 
@@ -445,19 +412,14 @@
             await fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    chat_id: TG_CHAT_ID,
-                    text: text,
-                    parse_mode: 'Markdown'
-                })
+                body: JSON.stringify({ chat_id: TG_CHAT_ID, text: text, parse_mode: 'Markdown' })
             });
             lastTelegramAlertTime = now;
         } catch (e) {
-            console.error('Telegram dispatch failed:', e);
+            console.error('Telegram dispatch error:', e);
         }
     }
 
-    // --- NODE REQUEST PROVISIONING ---
     function submitNodeRequest(e) {
         e.preventDefault();
         const id = document.getElementById('reqNodeId').value.trim();
@@ -467,30 +429,22 @@
         const rawNodes = localStorage.getItem('tw_registered_nodes');
         const nodes = rawNodes ? JSON.parse(rawNodes) : [];
 
-        nodes.push({
-            id: id,
-            sensors: `${sensors} - Loc: ${location}`,
-            interval: 15,
-            status: "Pending Approval"
-        });
-
+        nodes.push({ id: id, sensors: `${sensors} - ${location}`, interval: 15, status: "Pending Approval" });
         localStorage.setItem('tw_registered_nodes', JSON.stringify(nodes));
 
-        const modal = bootstrap.Modal.getInstance(document.getElementById('requestNodeModal'));
-        modal.hide();
+        bootstrap.Modal.getInstance(document.getElementById('requestNodeModal')).hide();
         e.target.reset();
-        alert(`Request for ${id} submitted! It will appear under Admin Gateway for approval.`);
+        alert(`Request for ${id} submitted! Pending review in the Admin panel.`);
     }
 
-    // --- PDF REPORT EXPORT ---
     function exportPDFReport() {
         const element = document.getElementById('dashboardReportContent');
         const opt = {
-            margin:       0.3,
-            filename:     `TerraWatch_Audit_${Date.now()}.pdf`,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, backgroundColor: '#090d16' },
-            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            margin: 0.3,
+            filename: `TerraWatch_Audit_${Date.now()}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, backgroundColor: '#090d16' },
+            jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
         };
         html2pdf().set(opt).from(element).save();
     }
